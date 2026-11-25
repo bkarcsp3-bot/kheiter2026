@@ -24,106 +24,108 @@ os.makedirs(DB_DIR, exist_ok=True)
 
 DB_PATH = os.path.join(DB_DIR, "election_attendance.db")
 
-AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 380" width="400" height="380" role="img" aria-label="شعار السلطة الوطنية المستقلة للانتخابات">
+AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 380" width="400" height="380" role="img" aria-label="شعار المعلم التاريخي - بلدية الخيثر">
   <defs>
-    <linearGradient id="silverBevel" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f1f5f9"/>
-      <stop offset="45%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#475569"/>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0265b8"/>
+      <stop offset="65%" stop-color="#0b84e3"/>
+      <stop offset="100%" stop-color="#4fb3ff"/>
     </linearGradient>
-    <linearGradient id="greenBand" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00843d"/>
-      <stop offset="55%" stop-color="#006b31"/>
-      <stop offset="100%" stop-color="#004d23"/>
+    <linearGradient id="hillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c69c6d"/>
+      <stop offset="55%" stop-color="#a87c4f"/>
+      <stop offset="100%" stop-color="#7c5632"/>
     </linearGradient>
-    <linearGradient id="flagGreen" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00843d"/>
-      <stop offset="100%" stop-color="#005a28"/>
+    <linearGradient id="stoneWall" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e39d58"/>
+      <stop offset="55%" stop-color="#cf813c"/>
+      <stop offset="100%" stop-color="#a65f24"/>
     </linearGradient>
-    <linearGradient id="flagWhite" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+    <linearGradient id="roofTerracotta" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d46a37"/>
+      <stop offset="100%" stop-color="#9e4319"/>
     </linearGradient>
-    <path id="arArc" d="M 55,215 A 145,145 0 1,1 345,215" fill="none"/>
+    <clipPath id="emblemClip">
+      <circle cx="200" cy="190" r="182"/>
+    </clipPath>
   </defs>
 
-  <!-- الإطار الفضي الخارجي الدائري المتصل بالراية -->
-  <path d="M 332,272 C 354,242 367,205 367,165 C 367,74 292,0 200,0 C 108,0 33,74 33,165 C 33,205 47,242 71,271 L 80,264 C 58,236 45,202 45,165 C 45,80 114,12 200,12 C 286,12 355,80 355,165 C 355,202 343,236 322,264 Z" fill="url(#silverBevel)" stroke="#334155" stroke-width="1.5"/>
+  <!-- إطار دائري خارجي ذهبي وكحلي -->
+  <circle cx="200" cy="190" r="188" fill="#0f2942" stroke="#c5963a" stroke-width="5"/>
 
-  <!-- الخلفية البيضاء الداخلية -->
-  <circle cx="200" cy="165" r="154" fill="#ffffff"/>
+  <g clip-path="url(#emblemClip)">
+    <!-- السماء الزرقاء -->
+    <rect x="0" y="0" width="400" height="270" fill="url(#skyGrad)"/>
 
-  <!-- الشريط الأخضر العلوي العريض للنص العربي -->
-  <path d="M 46,165 A 154,154 0 0,1 354,165 L 304,165 A 104,104 0 0,0 96,165 Z" fill="url(#greenBand)"/>
-  <!-- حد معدني فاصل أسفل الشريط الأخضر -->
-  <path d="M 96,165 A 104,104 0 0,1 304,165" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
+    <!-- الأشجار الخضراء خلف المبنى -->
+    <g fill="#1b4d25">
+      <circle cx="245" cy="175" r="36"/>
+      <circle cx="282" cy="182" r="32"/>
+      <circle cx="318" cy="196" r="28"/>
+      <circle cx="348" cy="212" r="24"/>
+      <circle cx="218" cy="192" r="26"/>
+    </g>
+    <g fill="#2b6e37">
+      <circle cx="252" cy="168" r="26"/>
+      <circle cx="288" cy="176" r="22"/>
+      <circle cx="322" cy="192" r="18"/>
+    </g>
 
-  <!-- النص العربي على القوس -->
-  <text fill="#ffffff" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="22.5" font-weight="800" letter-spacing="0.5">
-    <textPath href="#arArc" startOffset="50%" text-anchor="middle" dominant-baseline="central">
-      السلطة الوطنية المستقلة للانتخابات
-    </textPath>
-  </text>
+    <!-- البرج الحجري المرتفع على اليسار -->
+    <g stroke="#7a4215" stroke-width="1.2">
+      <!-- قاعدة البرج والقوس السفلي -->
+      <path d="M 55,255 L 55,95 L 128,85 L 128,255 Z" fill="url(#stoneWall)"/>
+      <path d="M 68,252 L 68,215 A 20,20 0 0,1 108,215 L 108,252 Z" fill="#8f5322"/>
+      <!-- الطابق العلوي والزوايا -->
+      <polygon points="52,95 76,78 112,78 131,90 131,148 52,148" fill="#d98a43"/>
+      <!-- نوافذ وفتحات البرج -->
+      <rect x="66" y="96" width="10" height="14" rx="1" fill="#4a280d"/>
+      <rect x="92" y="96" width="10" height="14" rx="1" fill="#4a280d"/>
+      <rect x="114" y="102" width="7" height="12" rx="1" fill="#4a280d"/>
+      <rect x="68" y="128" width="9" height="13" rx="1" fill="#4a280d"/>
+      <rect x="93" y="128" width="9" height="13" rx="1" fill="#4a280d"/>
+      <rect x="85" y="164" width="10" height="15" rx="1" fill="#4a280d"/>
+      <!-- تفاصيل الحجارة الأفقية -->
+      <line x1="55" y1="148" x2="128" y2="148" stroke="#8f511e" stroke-width="2"/>
+      <line x1="55" y1="192" x2="128" y2="192" stroke="#8f511e" stroke-width="1.5"/>
+    </g>
 
-  <!-- رموز تيفيناغ موزعة حول القوس الداخلي -->
-  <g fill="#111827" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <!-- يسار سفلي -->
-    <circle cx="101" cy="216" r="2.2"/>
-    <path d="M 108,214 L 118,223 M 118,214 L 108,223" fill="none"/>
-    <circle cx="125" cy="227" r="2.2"/>
-    <!-- يسار علوي -->
-    <path d="M 118,162 L 130,162 M 124,153 L 124,162" fill="none"/>
-    <circle cx="131" cy="153" r="2"/>
-    <path d="M 136,144 L 146,136 L 146,148" fill="none"/>
-    <circle cx="152" cy="133" r="2"/>
-    <!-- أعلى -->
-    <rect x="164" y="114" width="11" height="11" fill="none"/>
-    <circle cx="182" cy="115" r="2"/>
-    <path d="M 190,109 L 204,119 M 204,109 L 190,119 M 197,107 L 197,121" fill="none"/>
-    <circle cx="212" cy="115" r="2"/>
-    <circle cx="226" cy="117" r="4.5" fill="none"/>
-    <circle cx="226" cy="117" r="1.4"/>
-    <!-- يمين علوي -->
-    <path d="M 241,121 L 253,131 M 253,121 L 241,131" fill="none"/>
-    <line x1="264" y1="133" x2="264" y2="147"/>
-    <circle cx="273" cy="147" r="2"/>
-    <path d="M 277,154 L 289,166 M 289,154 L 277,166" fill="none"/>
-    <circle cx="283" cy="175" r="4.5" fill="none"/>
-    <circle cx="283" cy="175" r="1.4"/>
-    <line x1="286" y1="186" x2="286" y2="201"/>
-    <path d="M 294,187 L 288,194 L 294,201" fill="none"/>
-    <path d="M 295,207 L 283,217 L 295,223 Z" fill="none"/>
+    <!-- الجزء الأوسط المسقوف بالقرميد -->
+    <g stroke="#7a4215" stroke-width="1.2">
+      <rect x="128" y="158" width="72" height="92" fill="url(#stoneWall)"/>
+      <polygon points="124,158 148,136 202,136 202,158" fill="url(#roofTerracotta)"/>
+      <rect x="155" y="175" width="11" height="11" fill="#4a280d"/>
+    </g>
+
+    <!-- المبنى الطويل ذو السقف القرميدي المائل على اليمين -->
+    <g stroke="#7a4215" stroke-width="1.2">
+      <polygon points="200,175 348,214 348,262 200,254" fill="url(#stoneWall)"/>
+      <polygon points="196,174 224,154 356,196 348,214" fill="url(#roofTerracotta)"/>
+      <!-- نوافذ المبنى -->
+      <rect x="218" y="198" width="9" height="14" fill="#4a280d"/>
+      <rect x="238" y="203" width="9" height="14" fill="#4a280d"/>
+      <rect x="258" y="208" width="9" height="14" fill="#4a280d"/>
+      <rect x="282" y="214" width="9" height="14" fill="#4a280d"/>
+      <rect x="304" y="220" width="9" height="14" fill="#4a280d"/>
+      <rect x="325" y="225" width="8" height="13" fill="#4a280d"/>
+    </g>
+
+    <!-- الهضبة الصخرية والأرضية أسفل المعلم -->
+    <path d="M 0,275 Q 115,232 215,252 Q 310,258 400,235 L 400,380 L 0,380 Z" fill="url(#hillGrad)"/>
+    <!-- مسار صخري سفلي -->
+    <path d="M 10,335 Q 150,295 390,285 L 390,296 Q 150,308 10,348 Z" fill="#dec29b" opacity="0.85"/>
+    <!-- تفاصيل أعشاب وصخور صغيرة -->
+    <g fill="#5b6d29">
+      <circle cx="48" cy="295" r="4"/>
+      <circle cx="84" cy="282" r="3.5"/>
+      <circle cx="315" cy="272" r="5"/>
+      <circle cx="352" cy="264" r="4"/>
+      <circle cx="268" cy="318" r="4.5"/>
+    </g>
   </g>
 
-  <!-- رمز الظرف وصندوق الاقتراع في المنتصف -->
-  <g transform="translate(177, 134)">
-    <polygon points="23,2 45,14 23,26 1,14" fill="#007a37" stroke="#005a28" stroke-width="1.2"/>
-    <polyline points="6,17 23,26 40,17" fill="none" stroke="#ffffff" stroke-width="1.8"/>
-    <line x1="-6" y1="32" x2="52" y2="32" stroke="#007a37" stroke-width="2.6" stroke-linecap="round"/>
-  </g>
-
-  <!-- النص الإنجليزي في المنتصف -->
-  <text x="200" y="196" text-anchor="middle" fill="#1e293b" font-family="Segoe UI, Arial, sans-serif" font-size="22.5" font-weight="500">
-    Independent National
-  </text>
-  <text x="200" y="223" text-anchor="middle" fill="#1e293b" font-family="Segoe UI, Arial, sans-serif" font-size="22.5" font-weight="500">
-    Authority of Elections
-  </text>
-
-  <!-- العلم الجزائري المتموج في الأسفل -->
-  <g>
-    <!-- النصف الأخضر للعلم -->
-    <path d="M 52,256 C 95,292 148,295 190,274 L 190,342 C 148,362 95,358 52,320 Z" fill="url(#flagGreen)"/>
-    <!-- النصف الأبيض للعلم -->
-    <path d="M 190,274 C 235,252 288,255 342,272 C 324,296 318,322 336,346 C 284,328 235,320 190,342 Z" fill="url(#flagWhite)" stroke="#94a3b8" stroke-width="1"/>
-    <!-- الشريط المعدني الملتف على اليمين -->
-    <path d="M 332,272 C 314,296 310,322 328,346 L 342,348 C 324,324 328,298 346,274 Z" fill="url(#silverBevel)"/>
-    <!-- الهلال الأحمر -->
-    <path d="M 206,282 A 22,22 0 1,0 206,322 A 17.5,17.5 0 1,1 206,282 Z" fill="#d21034"/>
-    <!-- النجمة الحمراء -->
-    <polygon points="212,293 214.4,299.5 221.3,299.8 215.9,304 217.8,310.7 212,306.8 206.2,310.7 208.1,304 202.7,299.8 209.6,299.5" fill="#d21034"/>
-  </g>
+  <!-- حلقة داخلية ذهبية أنيقة -->
+  <circle cx="200" cy="190" r="182" fill="none" stroke="#c5963a" stroke-width="3.5"/>
 </svg>"""
 
 SQL_INIT_SCRIPT = """-- قاعدة بيانات مؤطري مراكز ومكاتب التصويت - بلدية الخيثر (ولاية البيض)
