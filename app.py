@@ -3,6 +3,7 @@ import io
 import os
 import sqlite3
 from datetime import datetime
+from urllib.parse import quote
 from flask import (
     Flask,
     Response,
@@ -50,14 +51,11 @@ AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400
     </clipPath>
   </defs>
 
-  <!-- إطار دائري خارجي ذهبي وكحلي -->
   <circle cx="200" cy="190" r="188" fill="#0f2942" stroke="#c5963a" stroke-width="5"/>
 
   <g clip-path="url(#emblemClip)">
-    <!-- السماء الزرقاء -->
     <rect x="0" y="0" width="400" height="270" fill="url(#skyGrad)"/>
 
-    <!-- الأشجار الخضراء خلف المبنى -->
     <g fill="#1b4d25">
       <circle cx="245" cy="175" r="36"/>
       <circle cx="282" cy="182" r="32"/>
@@ -71,37 +69,29 @@ AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400
       <circle cx="322" cy="192" r="18"/>
     </g>
 
-    <!-- البرج الحجري المرتفع على اليسار -->
     <g stroke="#7a4215" stroke-width="1.2">
-      <!-- قاعدة البرج والقوس السفلي -->
       <path d="M 55,255 L 55,95 L 128,85 L 128,255 Z" fill="url(#stoneWall)"/>
       <path d="M 68,252 L 68,215 A 20,20 0 0,1 108,215 L 108,252 Z" fill="#8f5322"/>
-      <!-- الطابق العلوي والزوايا -->
       <polygon points="52,95 76,78 112,78 131,90 131,148 52,148" fill="#d98a43"/>
-      <!-- نوافذ وفتحات البرج -->
       <rect x="66" y="96" width="10" height="14" rx="1" fill="#4a280d"/>
       <rect x="92" y="96" width="10" height="14" rx="1" fill="#4a280d"/>
       <rect x="114" y="102" width="7" height="12" rx="1" fill="#4a280d"/>
       <rect x="68" y="128" width="9" height="13" rx="1" fill="#4a280d"/>
       <rect x="93" y="128" width="9" height="13" rx="1" fill="#4a280d"/>
       <rect x="85" y="164" width="10" height="15" rx="1" fill="#4a280d"/>
-      <!-- تفاصيل الحجارة الأفقية -->
       <line x1="55" y1="148" x2="128" y2="148" stroke="#8f511e" stroke-width="2"/>
       <line x1="55" y1="192" x2="128" y2="192" stroke="#8f511e" stroke-width="1.5"/>
     </g>
 
-    <!-- الجزء الأوسط المسقوف بالقرميد -->
     <g stroke="#7a4215" stroke-width="1.2">
       <rect x="128" y="158" width="72" height="92" fill="url(#stoneWall)"/>
       <polygon points="124,158 148,136 202,136 202,158" fill="url(#roofTerracotta)"/>
       <rect x="155" y="175" width="11" height="11" fill="#4a280d"/>
     </g>
 
-    <!-- المبنى الطويل ذو السقف القرميدي المائل على اليمين -->
     <g stroke="#7a4215" stroke-width="1.2">
       <polygon points="200,175 348,214 348,262 200,254" fill="url(#stoneWall)"/>
       <polygon points="196,174 224,154 356,196 348,214" fill="url(#roofTerracotta)"/>
-      <!-- نوافذ المبنى -->
       <rect x="218" y="198" width="9" height="14" fill="#4a280d"/>
       <rect x="238" y="203" width="9" height="14" fill="#4a280d"/>
       <rect x="258" y="208" width="9" height="14" fill="#4a280d"/>
@@ -110,11 +100,8 @@ AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400
       <rect x="325" y="225" width="8" height="13" fill="#4a280d"/>
     </g>
 
-    <!-- الهضبة الصخرية والأرضية أسفل المعلم -->
     <path d="M 0,275 Q 115,232 215,252 Q 310,258 400,235 L 400,380 L 0,380 Z" fill="url(#hillGrad)"/>
-    <!-- مسار صخري سفلي -->
     <path d="M 10,335 Q 150,295 390,285 L 390,296 Q 150,308 10,348 Z" fill="#dec29b" opacity="0.85"/>
-    <!-- تفاصيل أعشاب وصخور صغيرة -->
     <g fill="#5b6d29">
       <circle cx="48" cy="295" r="4"/>
       <circle cx="84" cy="282" r="3.5"/>
@@ -124,7 +111,6 @@ AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400
     </g>
   </g>
 
-  <!-- حلقة داخلية ذهبية أنيقة -->
   <circle cx="200" cy="190" r="182" fill="none" stroke="#c5963a" stroke-width="3.5"/>
 </svg>"""
 
@@ -506,8 +492,8 @@ TEMPLATES = {
             padding-bottom: 0.65rem;
         }
         .brand-logo-wrap {
-            width: 56px;
-            height: 54px;
+            width: 52px;
+            height: 50px;
             border-radius: 12px;
             background: #ffffff;
             border: 2px solid var(--gov-gold);
@@ -525,12 +511,12 @@ TEMPLATES = {
         }
         .brand-title {
             font-weight: 800;
-            font-size: 1.05rem;
+            font-size: clamp(0.9rem, 2.3vw, 1.08rem);
             line-height: 1.25;
             color: #ffffff;
         }
         .brand-subtitle {
-            font-size: 0.78rem;
+            font-size: clamp(0.72rem, 1.85vw, 0.8rem);
             color: var(--gov-gold-light);
             font-weight: 600;
         }
@@ -539,7 +525,6 @@ TEMPLATES = {
             border-radius: 14px;
             background-color: var(--gov-card);
             box-shadow: 0 4px 16px rgba(15, 41, 66, 0.05);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
         .stat-card {
             border-top: 4px solid var(--gov-navy);
@@ -601,7 +586,7 @@ TEMPLATES = {
         }
         .table thead th {
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             white-space: nowrap;
         }
         .footer-gov {
@@ -618,14 +603,34 @@ TEMPLATES = {
             color: #92400e;
             border-radius: 12px;
         }
+        @media (max-width: 767.98px) {
+            .container {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+            .card {
+                border-radius: 12px;
+            }
+            .btn {
+                min-height: 40px;
+            }
+            .form-control, .form-select {
+                min-height: 42px;
+                font-size: 0.96rem;
+            }
+            .table thead th, .table tbody td {
+                font-size: 0.84rem;
+                padding: 0.5rem 0.42rem;
+            }
+        }
     </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-gov mb-4">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-3 m-0" href="{{ url_for('login') }}">
+        <a class="navbar-brand d-flex align-items-center gap-2 gap-sm-3 m-0" href="{{ url_for('login') }}">
             <div class="brand-logo-wrap">
-                <img src="{{ url_for('authority_logo') }}" alt="شعار السلطة الوطنية المستقلة للانتخابات" width="112" height="106" class="mb-2" style="object-fit:contain;">
+                <img src="{{ url_for('authority_logo') }}" alt="شعار السلطة الوطنية المستقلة للانتخابات" width="112" height="106" style="object-fit:contain;">
             </div>
             <div>
                 <div class="brand-title">السلطة الوطنية المستقلة للانتخابات — بلدية الخيثر</div>
@@ -669,11 +674,11 @@ TEMPLATES = {
     "login.html": """{% extends "base.html" %}
 {% block title %}تسجيل الدخول - يوم الاقتراع 28 نوفمبر 2026{% endblock %}
 {% block content %}
-<div class="row justify-content-center align-items-center my-3">
+<div class="row justify-content-center align-items-center my-2 my-md-3">
     <div class="col-md-6 col-lg-5">
         <div class="card p-4 p-md-5">
             <div class="text-center mb-3">
-                <img src="{{ url_for('authority_logo') }}" alt="شعار السلطة" width="88" height="88" class="mb-2">
+                <img src="{{ url_for('authority_logo') }}" alt="شعار السلطة" width="84" height="84" class="mb-2">
                 <h4 class="fw-bold mb-1" style="color:#0f2942;">بوابة المتابعة الانتخابية</h4>
                 <div class="text-muted small fw-semibold">انتخاب أعضاء المجالس الشعبية البلدية والولائية</div>
                 <span class="badge mt-2 px-3 py-2" style="background-color:#f5ebd4; color:#7c5612; border:1px solid #e3c88b; font-size:0.82rem;">
@@ -711,36 +716,36 @@ TEMPLATES = {
         <small class="text-muted">متابعة مؤطري المركز ومكاتبه وأعداد المصوتين — يوم الاقتراع 28 نوفمبر 2026</small>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-grow-1 flex-sm-grow-0">
         <a href="{{ url_for('center_dashboard', view='absences') }}"
-           class="btn px-4 py-2 {% if active_view == 'absences' %}btn-gov-primary{% else %}btn-outline-secondary fw-bold{% endif %}">
+           class="btn flex-fill flex-sm-grow-0 px-3 px-sm-4 py-2 {% if active_view == 'absences' %}btn-gov-primary{% else %}btn-outline-secondary fw-bold{% endif %}">
             اختيار الغيابات
         </a>
         <a href="{{ url_for('center_dashboard', view='turnout') }}"
-           class="btn px-4 py-2 {% if active_view == 'turnout' %}btn-gov-gold{% else %}btn-outline-warning fw-bold text-dark{% endif %}">
+           class="btn flex-fill flex-sm-grow-0 px-3 px-sm-4 py-2 {% if active_view == 'turnout' %}btn-gov-gold{% else %}btn-outline-warning fw-bold text-dark{% endif %}">
             نسبة المشاركة
         </a>
     </div>
 </div>
 
 {% if active_view == 'absences' %}
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">إجمالي مؤطري المركز والمكاتب</span>
-            <h2 class="fw-bold mb-0 mt-1" style="color:#0f2942;">{{ stats.total }}</h2>
+<div class="row g-2 g-md-3 mb-4">
+    <div class="col-4">
+        <div class="card stat-card p-2 p-md-3 text-center">
+            <span class="text-muted small fw-bold">الإجمالي</span>
+            <h3 class="fw-bold mb-0 mt-1" style="color:#0f2942;">{{ stats.total }}</h3>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-3 text-center" style="border-top-color:#16a34a;">
+    <div class="col-4">
+        <div class="card stat-card p-2 p-md-3 text-center" style="border-top-color:#16a34a;">
             <span class="text-muted small fw-bold">الحاضرون</span>
-            <h2 class="fw-bold mb-0 mt-1 text-success">{{ stats.present_count }}</h2>
+            <h3 class="fw-bold mb-0 mt-1 text-success">{{ stats.present_count }}</h3>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-3 text-center" style="border-top-color:#dc2626;">
-            <span class="text-muted small fw-bold">الغائبون (المبلغ عنهم)</span>
-            <h2 class="fw-bold mb-0 mt-1 text-danger">{{ stats.absent_count }}</h2>
+    <div class="col-4">
+        <div class="card stat-card p-2 p-md-3 text-center" style="border-top-color:#dc2626;">
+            <span class="text-muted small fw-bold">الغائبون</span>
+            <h3 class="fw-bold mb-0 mt-1 text-danger">{{ stats.absent_count }}</h3>
         </div>
     </div>
 </div>
@@ -748,7 +753,7 @@ TEMPLATES = {
 <div class="card p-3 mb-4">
     <form method="GET" class="row g-2 align-items-end">
         <input type="hidden" name="view" value="absences">
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
             <label class="form-label small fw-bold">المكتب / إدارة المركز:</label>
             <select name="office" class="form-select">
                 <option value="all" {% if office_filter == 'all' %}selected{% endif %}>جميع المكاتب وإدارة المركز</option>
@@ -757,7 +762,7 @@ TEMPLATES = {
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <label class="form-label small fw-bold">الوضعية:</label>
             <select name="status" class="form-select">
                 <option value="all" {% if status_filter == 'all' %}selected{% endif %}>الكل</option>
@@ -765,11 +770,11 @@ TEMPLATES = {
                 <option value="غائب" {% if status_filter == 'غائب' %}selected{% endif %}>غائب فقط</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <label class="form-label small fw-bold">بحث بالاسم أو اللقب:</label>
-            <input type="text" name="q" value="{{ search_q }}" class="form-control" placeholder="اكتب اللقب أو الاسم...">
+            <input type="text" name="q" value="{{ search_q }}" class="form-control" placeholder="اللقب أو الاسم...">
         </div>
-        <div class="col-md-2">
+        <div class="col-12 col-md-2">
             <button type="submit" class="btn btn-gov-primary w-100">بحث / تصفية</button>
         </div>
     </form>
@@ -868,7 +873,7 @@ TEMPLATES = {
 </div>
 
 {% else %}
-<div class="row g-3 mb-4">
+<div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-3">
         <div class="card stat-card p-3 text-center">
             <span class="text-muted small fw-bold">مجموع المصوتين (09:30)</span>
@@ -920,19 +925,19 @@ TEMPLATES = {
                     <td>
                         <form id="turnoutForm{{ t.id }}" method="POST" action="{{ url_for('update_turnout', turnout_id=t.id) }}"></form>
                         <input type="number" min="0" name="voters_0930" value="{{ t.voters_0930 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="max-width:105px;">
+                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
                     </td>
                     <td>
                         <input type="number" min="0" name="voters_1400" value="{{ t.voters_1400 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="max-width:105px;">
+                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
                     </td>
                     <td>
                         <input type="number" min="0" name="voters_1700" value="{{ t.voters_1700 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="max-width:105px;">
+                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
                     </td>
                     <td>
                         <input type="number" min="0" name="voters_1900" value="{{ t.voters_1900 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="max-width:105px;">
+                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
                     </td>
                     <td class="small text-muted">{{ t.updated_at or '-' }}</td>
                     <td>
@@ -950,64 +955,64 @@ TEMPLATES = {
     "admin_dashboard.html": """{% extends "base.html" %}
 {% block title %}لوحة المندوب البلدي - الغيابات ونسب المشاركة{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
         <h4 class="fw-bold mb-0" style="color:#0f2942;">لوحة المندوب البلدي — بلدية الخيثر</h4>
         <small class="text-muted">متابعة الغيابات ونسب المشاركة والأرقام المحجوزة ليوم الاقتراع 28 نوفمبر 2026</small>
     </div>
-    <div class="d-flex flex-wrap gap-2">
+    <div class="d-flex flex-wrap gap-2 w-100 w-lg-auto">
         <a href="{{ url_for('admin_dashboard', tab=active_tab, center_id=center_filter) }}" class="btn btn-outline-secondary btn-sm fw-bold">تحديث ↻</a>
-        <a href="{{ url_for('export_absences_csv') }}" class="btn btn-success btn-sm fw-bold">تحميل تقرير الغيابات (CSV)</a>
-        <a href="{{ url_for('export_turnout_csv') }}" class="btn btn-gov-primary btn-sm">تحميل تقرير نسب المشاركة (CSV)</a>
-        <a href="{{ url_for('admin_print_absences_pdf', center_id=center_filter) }}" target="_blank" class="btn btn-outline-success btn-sm fw-bold">طباعة تقرير الغيابات (PDF)</a>
-        <a href="{{ url_for('admin_print_turnout_pdf', center_id=center_filter) }}" target="_blank" class="btn btn-outline-primary btn-sm fw-bold">طباعة تقرير نسب التصويت (PDF)</a>
+        <a href="{{ url_for('export_absences_csv') }}" class="btn btn-success btn-sm fw-bold">تصدير الغيابات (CSV)</a>
+        <a href="{{ url_for('export_turnout_csv') }}" class="btn btn-gov-primary btn-sm">تصدير المشاركة (CSV)</a>
+        <a href="{{ url_for('admin_print_absences_pdf', center_id=center_filter) }}" target="_blank" class="btn btn-outline-success btn-sm fw-bold">تقرير الغيابات</a>
+        <a href="{{ url_for('admin_print_turnout_pdf', center_id=center_filter) }}" target="_blank" class="btn btn-outline-primary btn-sm fw-bold">تقرير نسب التصويت</a>
         <button type="button" class="btn btn-gov-gold btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#importCsvModal">
-            استرجاع البيانات من CSV
+            استرجاع CSV
         </button>
         <button type="button" class="btn btn-outline-dark btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#changePasswordsModal">
-            تغيير كلمات السر 🔑
+            كلمات السر 🔑
         </button>
         <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#resetDataModal">
-            تصفير البيانات (إعادة من الصفر)
+            تصفير البيانات
         </button>
     </div>
 </div>
 
 <ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item">
-        <a class="nav-link fw-bold {% if active_tab == 'absences' %}active{% endif %}"
+    <li class="nav-item flex-fill flex-sm-grow-0">
+        <a class="nav-link fw-bold text-center {% if active_tab == 'absences' %}active{% endif %}"
            {% if active_tab == 'absences' %}style="background-color:#0f2942;"{% endif %}
            href="{{ url_for('admin_dashboard', tab='absences', center_id=center_filter) }}">
             تقرير الغيابات
         </a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link fw-bold {% if active_tab == 'turnout' %}active{% endif %}"
+    <li class="nav-item flex-fill flex-sm-grow-0">
+        <a class="nav-link fw-bold text-center {% if active_tab == 'turnout' %}active{% endif %}"
            {% if active_tab == 'turnout' %}style="background-color:#0f2942;"{% endif %}
            href="{{ url_for('admin_dashboard', tab='turnout', center_id=center_filter) }}">
-            نسب المشاركة والأرقام المحجوزة (09:30 / 14:00 / 17:00 / 19:00)
+            نسب المشاركة (09:30 / 14:00 / 17:00 / 19:00)
         </a>
     </li>
 </ul>
 
 {% if active_tab == 'absences' %}
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">إجمالي المؤطرين بالبلدية</span>
-            <h2 class="fw-bold mb-0 mt-1" style="color:#0f2942;">{{ totals.total }}</h2>
+<div class="row g-2 g-md-3 mb-4">
+    <div class="col-4">
+        <div class="card stat-card p-2 p-md-3 text-center">
+            <span class="text-muted small fw-bold">الإجمالي</span>
+            <h3 class="fw-bold mb-0 mt-1" style="color:#0f2942;">{{ totals.total }}</h3>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-3 text-center" style="border-top-color:#16a34a;">
-            <span class="text-muted small fw-bold">إجمالي الحاضرين</span>
-            <h2 class="fw-bold mb-0 mt-1 text-success">{{ totals.present_count }}</h2>
+    <div class="col-4">
+        <div class="card stat-card p-2 p-md-3 text-center" style="border-top-color:#16a34a;">
+            <span class="text-muted small fw-bold">الحاضرون</span>
+            <h3 class="fw-bold mb-0 mt-1 text-success">{{ totals.present_count }}</h3>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-3 text-center" style="border-top-color:#dc2626;">
-            <span class="text-muted small fw-bold">إجمالي الغائبين</span>
-            <h2 class="fw-bold mb-0 mt-1 text-danger">{{ totals.absent_count }}</h2>
+    <div class="col-4">
+        <div class="card stat-card p-2 p-md-3 text-center" style="border-top-color:#dc2626;">
+            <span class="text-muted small fw-bold">الغائبون</span>
+            <h3 class="fw-bold mb-0 mt-1 text-danger">{{ totals.absent_count }}</h3>
         </div>
     </div>
 </div>
@@ -1089,7 +1094,6 @@ TEMPLATES = {
 </div>
 
 {% else %}
-<!-- مؤشر متابعة البلاغات لكل فترة -->
 <div class="card p-3 mb-3">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="fw-bold small" style="color:#0f2942;">مؤشر استلام الأرقام من المكاتب ({{ turnout_overall.offices_count }} مكتب):</span>
@@ -1102,36 +1106,36 @@ TEMPLATES = {
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-2">
+<div class="row g-2 g-md-3 mb-4">
+    <div class="col-6 col-md-2">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">إجمالي المسجلين (8581)</span>
-            <h3 class="fw-bold mb-0 mt-1 text-dark">{{ turnout_overall.municipal_total_registered }}</h3>
-            <small class="text-muted">المحجوز بالمكاتب: {{ turnout_overall.registered_voters }}</small>
+            <span class="text-muted small fw-bold">المسجلون (8581)</span>
+            <h4 class="fw-bold mb-0 mt-1 text-dark">{{ turnout_overall.municipal_total_registered }}</h4>
+            <small class="text-muted">محجوز: {{ turnout_overall.registered_voters }}</small>
         </div>
     </div>
-    <div class="col-md-2">
+    <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center">
             <span class="text-muted small fw-bold">09:30</span>
             <h4 class="fw-bold mb-0 mt-1 text-primary">{{ turnout_overall.voters_0930 }}</h4>
             <small class="fw-bold text-primary">{% if turnout_overall.pct_0930 is not none %}{{ turnout_overall.pct_0930 }}%{% else %}-{% endif %}</small>
         </div>
     </div>
-    <div class="col-md-2">
+    <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center" style="border-top-color:#0ea5e9;">
             <span class="text-muted small fw-bold">14:00</span>
             <h4 class="fw-bold mb-0 mt-1 text-info">{{ turnout_overall.voters_1400 }}</h4>
             <small class="fw-bold text-info">{% if turnout_overall.pct_1400 is not none %}{{ turnout_overall.pct_1400 }}%{% else %}-{% endif %}</small>
         </div>
     </div>
-    <div class="col-md-2">
+    <div class="col-6 col-md-2">
         <div class="card stat-card gold-accent p-3 text-center">
             <span class="text-muted small fw-bold">17:00</span>
             <h4 class="fw-bold mb-0 mt-1 text-warning">{{ turnout_overall.voters_1700 }}</h4>
             <small class="fw-bold text-warning">{% if turnout_overall.pct_1700 is not none %}{{ turnout_overall.pct_1700 }}%{% else %}-{% endif %}</small>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-12 col-md-4">
         <div class="card stat-card p-3 text-center" style="border-top-color:#16a34a;">
             <span class="text-muted small fw-bold">19:00 (النهائية)</span>
             <h4 class="fw-bold mb-0 mt-1 text-success">{{ turnout_overall.voters_1900 }}</h4>
@@ -1174,12 +1178,12 @@ TEMPLATES = {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <div>
             <h5 class="fw-bold mb-1" style="color:#0f2942;">تفاصيل المصوتين والنسب حسب كل مكتب</h5>
-            <div class="d-flex align-items-center gap-3 small">
-                <span><span class="badge" style="background-color:#16a34a;">&nbsp;&nbsp;</span> خانة خضراء: تم ملؤها من طرف رئيس المركز</span>
+            <div class="d-flex align-items-center gap-3 small flex-wrap">
+                <span><span class="badge" style="background-color:#16a34a;">&nbsp;&nbsp;</span> خانة خضراء: تم ملؤها</span>
                 <span><span class="badge bg-light text-dark border">&nbsp;&nbsp;</span> خانة بيضاء: لم تُملأ بعد</span>
             </div>
         </div>
-        <form method="GET" class="d-flex gap-2 align-items-center">
+        <form method="GET" class="d-flex gap-2 align-items-center w-100 w-sm-auto">
             <input type="hidden" name="tab" value="turnout">
             <select name="center_id" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="all" {% if center_filter == 'all' %}selected{% endif %}>جميع المراكز الخمسة</option>
@@ -1219,27 +1223,27 @@ TEMPLATES = {
                         <form id="adminTurnoutForm{{ item.id }}" method="POST" action="{{ url_for('admin_update_turnout', turnout_id=item.id) }}" class="d-flex justify-content-center gap-1">
                             <input type="hidden" name="current_center_filter" value="{{ center_filter }}">
                             <input type="number" min="0" name="registered_voters" value="{{ item.registered_voters }}"
-                                   class="form-control form-control-sm text-center" style="width:85px;">
+                                   class="form-control form-control-sm text-center" style="min-width:74px;width:85px;">
                         </form>
                     </td>
                     <td class="{% if item.filled_0930 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_0930" value="{{ item.voters_0930 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_0930 %}input-filled-green{% endif %}" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_0930 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
                         {% if item.pct_0930 is not none %}<span class="badge bg-primary">{{ item.pct_0930 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="{% if item.filled_1400 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1400" value="{{ item.voters_1400 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1400 %}input-filled-green{% endif %}" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1400 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
                         {% if item.pct_1400 is not none %}<span class="badge bg-info text-dark">{{ item.pct_1400 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="{% if item.filled_1700 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1700" value="{{ item.voters_1700 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1700 %}input-filled-green{% endif %}" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1700 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
                         {% if item.pct_1700 is not none %}<span class="badge bg-warning text-dark">{{ item.pct_1700 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="{% if item.filled_1900 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1900" value="{{ item.voters_1900 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1900 %}input-filled-green{% endif %}" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1900 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
                         {% if item.pct_1900 is not none %}<span class="badge bg-success">{{ item.pct_1900 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="small">
@@ -1264,7 +1268,7 @@ TEMPLATES = {
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info small">
-                        <strong>ملاحظة:</strong> يمكنك رفع ملف <strong>تقرير نسب المشاركة</strong> (لإرجاع الأرقام المحجوزة وأعداد المصوتين للفترات الأربع) أو ملف <strong>تقرير الغيابات</strong> (لإرجاع الغائبين وأسباب الغياب والمستخلفين) المحمّل مسبقاً من النظام.
+                        <strong>ملاحظة:</strong> يمكنك رفع ملف <strong>تقرير نسب المشاركة</strong> أو ملف <strong>تقرير الغيابات</strong> المحمّل مسبقاً من النظام.
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">نوع التقرير المراد استرجاعه:</label>
@@ -1298,7 +1302,7 @@ TEMPLATES = {
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        <strong>تنبيه:</strong> يمكنك تصفير الغيابات فقط، أو تصفير عدادات المصوتين فقط، أو تصفير الكل معاً. (العدد المسجل / الرقم المحجوز يبقى محفوظاً).
+                        <strong>تنبيه:</strong> يمكنك تصفير الغيابات فقط، أو تصفير عدادات المصوتين فقط، أو تصفير الكل معاً.
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">اختر نطاق التصفير:</label>
@@ -1321,6 +1325,7 @@ TEMPLATES = {
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="changePasswordsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -1331,7 +1336,7 @@ TEMPLATES = {
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info small mb-3">
-                        <strong>تنبيه:</strong> اترك حقل كلمة السر فارغاً لأي حساب لا تريد تغيير كلمته الحالية. عند إدخال كلمة سر جديدة وحفظها، تُحدّث فوراً وتسجيل الدخول بها مباشرة.
+                        <strong>تنبيه:</strong> اترك حقل كلمة السر فارغاً لأي حساب لا تريد تغيير كلمته الحالية.
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered align-middle text-center mb-0">
@@ -1385,10 +1390,12 @@ TURNOUT_SLOTS = [
 
 MUNICIPAL_TOTAL_REGISTERED = 8581
 
+
 def calc_municipal_turnout_pct(voters, registered_total=MUNICIPAL_TOTAL_REGISTERED):
     if not registered_total or registered_total <= 0:
         return None
     return round((voters / registered_total) * 100, 2)
+
 
 USERS = {
     "admin": {"password": os.environ.get("ADMIN_PASS", "2026"), "role": "admin", "center_id": None, "title": "المندوب البلدي - بلدية الخيثر"},
@@ -1493,7 +1500,6 @@ def init_database():
             if "updated_at" not in cols:
                 conn.execute("ALTER TABLE election_staff ADD COLUMN updated_at TEXT DEFAULT ''")
             conn.commit()
-        # مزامنة ترتيب المراكز ومؤطريها إذا كانت قاعدة البيانات مهيأة مسبقاً
         c3_row = conn.execute("SELECT center_name FROM centers WHERE center_id = 3").fetchone()
         if c3_row and c3_row["center_name"] != "ابتدائية قرية سيدي خليفة":
             conn.executescript("DROP VIEW IF EXISTS v_summary_by_center; DROP TABLE IF EXISTS office_turnout; DROP TABLE IF EXISTS election_staff; DROP TABLE IF EXISTS centers;")
@@ -1684,8 +1690,6 @@ def update_turnout(turnout_id):
     v1400 = parse_non_neg_int("voters_1400", row["voters_1400"] or 0)
     v1700 = parse_non_neg_int("voters_1700", row["voters_1700"] or 0)
     v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
-
-    # السماح بإدخال وتعديل أي فترة (09:30، 14:00، 17:00، 19:00) في أي وقت دون قيود تسلسل أو حجز
 
     f0930 = 1 if v0930 > 0 else 0
     f1400 = 1 if v1400 > 0 else 0
@@ -2054,7 +2058,6 @@ def export_absences_csv():
             r["birth_date"], r["absence_reason"], r["replacement_name"], r["updated_at"]
         ])
 
-    from urllib.parse import quote
     ar_name = "تقرير_الغيابات_الخيثر_28_نوفمبر_2026.csv"
     return Response(
         output.getvalue(),
@@ -2111,7 +2114,6 @@ def export_turnout_csv():
             r["updated_at"] or "-"
         ])
 
-    from urllib.parse import quote
     ar_name = "تقرير_نسب_المشاركة_الخيثر_28_نوفمبر_2026.csv"
     return Response(
         output.getvalue(),
@@ -2120,8 +2122,6 @@ def export_turnout_csv():
             "Content-Disposition": f"attachment; filename=turnout_kheiter_2026.csv; filename*=UTF-8''{quote(ar_name)}"
         },
     )
-
-
 
 
 @app.route("/import_csv", methods=["POST"])
@@ -2287,219 +2287,306 @@ def admin_change_passwords():
     return redirect(url_for("admin_dashboard", tab=request.args.get("tab", "absences"), center_id=request.args.get("center_id", "all")))
 
 
-def _shape_arabic_for_draw(text):
-    """Reshape Arabic letters and apply BiDi ordering when libraries are available."""
-    s = str(text or "")
-    try:
-        import arabic_reshaper
-        from bidi.algorithm import get_display
-        return get_display(arabic_reshaper.reshape(s))
-    except Exception:
-        return s
-
-
-def _find_arabic_ttf_font():
-    """Search system/common paths for a TrueType font that supports Arabic glyphs."""
-    candidates = [
-        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf",
-        "C:\\Windows\\Fonts\\arial.ttf",
-        "C:\\Windows\\Fonts\\tahoma.ttf",
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
-    return None
-
-
-def _build_large_arabic_pdf_bytes(title, subtitle, cards, headers, rows, now_str):
-    """Build a crisp, large-font (16pt) PDF via ReportLab with Arabic TTF support and clean RTL alignment."""
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.pdfgen import canvas
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-
-    buf = io.BytesIO()
-    page_w, page_h = landscape(A4)
-    c = canvas.Canvas(buf, pagesize=landscape(A4))
-    c.setTitle("Kheiter Election Report")
-
-    font_name = "Helvetica"
-    font_bold = "Helvetica-Bold"
-    ttf_path = _find_arabic_ttf_font()
-    if ttf_path:
-        try:
-            pdfmetrics.registerFont(TTFont("ArLargeFont", ttf_path))
-            font_name = "ArLargeFont"
-            font_bold = "ArLargeFont"
-        except Exception:
-            font_name = "Helvetica"
-            font_bold = "Helvetica-Bold"
-
-    margin_x = 28
-    usable_w = page_w - 2 * margin_x
-    right_x = page_w - margin_x
-
-    def draw_header_block(y_top):
-        c.setFont(font_bold, 16)
-        c.setFillColorRGB(0.059, 0.161, 0.259)
-        c.drawRightString(right_x, y_top, _shape_arabic_for_draw(title))
-
-        c.setFont(font_name, 16)
-        c.setFillColorRGB(0.278, 0.333, 0.412)
-        y_sub = y_top - 22
-        c.drawRightString(right_x, y_sub, _shape_arabic_for_draw(subtitle))
-
-        c.setFont(font_name, 16)
-        c.setFillColorRGB(0.392, 0.455, 0.545)
-        y_meta = y_sub - 22
-        c.drawRightString(right_x, y_meta, _shape_arabic_for_draw(f"الخيثر • {now_str}"))
-        return y_meta - 12
-
-    y = draw_header_block(page_h - 32)
-
-    if cards:
-        card_summary = "  |  ".join(f"{item.get('label', '')}: {item.get('val', '')}" for item in cards)
-        c.setFont(font_bold, 16)
-        c.setFillColorRGB(0.059, 0.161, 0.259)
-        y -= 18
-        c.drawRightString(right_x, y, _shape_arabic_for_draw(card_summary[:110]))
-        y -= 14
-
-    cols_count = max(len(headers), 1)
-    col_w = usable_w / cols_count
-    row_h = 26
-
-    def draw_table_header(y_pos):
-        c.setFillColorRGB(0.059, 0.161, 0.259)
-        c.rect(margin_x, y_pos - row_h, usable_w, row_h, stroke=1, fill=1)
-        c.setFont(font_bold, 16)
-        c.setFillColorRGB(1, 1, 1)
-        for i, h_txt in enumerate(headers):
-            # Right-to-left column order
-            col_x = right_x - (i + 1) * col_w
-            c.rect(col_x, y_pos - row_h, col_w, row_h, stroke=1, fill=0)
-            c.drawCentredString(col_x + col_w / 2, y_pos - row_h + 7, _shape_arabic_for_draw(h_txt))
-        return y_pos - row_h
-
-    y = draw_table_header(y)
-    c.setFont(font_name, 16)
-
-    for idx_r, r in enumerate(rows):
-        if y - row_h < 28:
-            c.showPage()
-            y = draw_header_block(page_h - 32)
-            y = draw_table_header(y)
-            c.setFont(font_name, 16)
-
-        if idx_r % 2 == 1:
-            c.setFillColorRGB(0.973, 0.980, 0.988)
-            c.rect(margin_x, y - row_h, usable_w, row_h, stroke=0, fill=1)
-
-        c.setFillColorRGB(0.059, 0.090, 0.165)
-        for i in range(cols_count):
-            val = r[i] if i < len(r) else ""
-            col_x = right_x - (i + 1) * col_w
-            c.rect(col_x, y - row_h, col_w, row_h, stroke=1, fill=0)
-            c.drawCentredString(col_x + col_w / 2, y - row_h + 7, _shape_arabic_for_draw(str(val)))
-        y -= row_h
-
-    c.save()
-    return buf.getvalue()
-
-
 def _render_admin_pdf_response(title, subtitle, cards, headers, rows, ascii_name, arabic_name, footer_note=""):
-    from urllib.parse import quote
+    import html as html_mod
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 1) Primary: WeasyPrint with explicit large Arabic font (16pt)
-    try:
-        from weasyprint import HTML
-        card_blocks = []
-        for item in cards:
-            sub_part = f'<div class="sub">{item["sub"]}</div>' if item.get("sub") else ""
-            card_blocks.append(
-                f'<div class="card"><div class="lbl">{item["label"]}</div><div class="val">{item["val"]}</div>{sub_part}</div>'
-            )
-        cards_html = "".join(card_blocks)
-        ths_html = "".join(f"<th>{h}</th>" for h in headers)
-        trs_html = "".join(
-            "<tr>" + "".join(f"<td>{col}</td>" for col in r) + "</tr>"
-            for r in rows
-        )
-        note_html = f'<div class="note">{footer_note}</div>' if footer_note else ""
+    safe_title = html_mod.escape(str(title))
+    safe_subtitle = html_mod.escape(str(subtitle))
+    safe_now = html_mod.escape(now_str)
+    safe_footer = html_mod.escape(footer_note) if footer_note else ""
 
-        html_doc = f"""<!DOCTYPE html>
+    card_blocks = []
+    for item in cards:
+        lbl = html_mod.escape(str(item.get("label", "")))
+        val = html_mod.escape(str(item.get("val", "")))
+        sub_html = f'<div class="sub">{html_mod.escape(str(item["sub"]))}</div>' if item.get("sub") else ""
+        card_blocks.append(
+            f'<div class="card"><div class="lbl">{lbl}</div><div class="val">{val}</div>{sub_html}</div>'
+        )
+    cards_html = "".join(card_blocks)
+    ths_html = "".join(f"<th>{html_mod.escape(str(h))}</th>" for h in headers)
+    trs_html = "".join(
+        "<tr>" + "".join(f"<td>{html_mod.escape(str(col))}</td>" for col in r) + "</tr>"
+        for r in rows
+    )
+
+    mobile_card_items = []
+    for idx, r in enumerate(rows, start=1):
+        fields_html = []
+        for col_idx, col_val in enumerate(r):
+            h_lbl = html_mod.escape(str(headers[col_idx])) if col_idx < len(headers) else f"بند {col_idx + 1}"
+            c_val = html_mod.escape(str(col_val))
+            fields_html.append(
+                f'<div class="m-row"><span class="m-key">{h_lbl}</span><span class="m-val">{c_val}</span></div>'
+            )
+        mobile_card_items.append(
+            f'<div class="m-card"><div class="m-head">سجل #{idx}</div>{"".join(fields_html)}</div>'
+        )
+    mobile_cards_html = "".join(mobile_card_items)
+    note_html = f'<div class="note">{safe_footer}</div>' if safe_footer else ""
+
+    html_doc = f"""<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{safe_title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Noto+Naskh+Arabic:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  @page {{ size: A4 landscape; margin: 10mm; }}
-  body {{ font-family: 'Noto Naskh Arabic', 'DejaVu Sans', 'Arial', sans-serif; direction: rtl; color: #0f172a; margin: 0; font-size: 16pt; line-height: 1.45; }}
-  .top {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #c5963a; padding-bottom: 8px; margin-bottom: 12px; }}
-  .top h2 {{ margin: 0; font-size: 16pt; color: #0f2942; font-weight: bold; }}
-  .top p {{ margin: 4px 0 0; font-size: 16pt; color: #475569; }}
-  .meta {{ text-align: left; font-size: 16pt; color: #334155; }}
-  .cards {{ display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }}
-  .card {{ flex: 1; min-width: 150px; border: 1px solid #cbd5e1; border-top: 3px solid #0f2942; border-radius: 6px; padding: 8px; background: #f8fafc; text-align: center; font-size: 16pt; }}
-  .card .lbl {{ font-size: 16pt; color: #475569; font-weight: bold; }}
-  .card .val {{ font-size: 16pt; color: #0f2942; font-weight: bold; margin-top: 2px; }}
-  .card .sub {{ font-size: 16pt; color: #047857; font-weight: bold; margin-top: 2px; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: 16pt; }}
-  th {{ background: #0f2942; color: #ffffff; padding: 6px 5px; border: 1px solid #1e3a5f; text-align: center; font-size: 16pt; }}
-  td {{ padding: 5px; border: 1px solid #cbd5e1; text-align: center; font-size: 16pt; }}
-  tr:nth-child(even) {{ background: #f8fafc; }}
-  .note {{ margin-top: 10px; padding: 8px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 5px; font-size: 16pt; color: #78350f; }}
-  .foot {{ margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 16pt; color: #64748b; }}
+  @page {{
+    size: A4 landscape;
+    margin: 10mm;
+  }}
+  * {{
+    box-sizing: border-box;
+  }}
+  body {{
+    font-family: 'Noto Naskh Arabic', 'Cairo', 'Tahoma', 'Arial', sans-serif;
+    direction: rtl;
+    color: #0f172a;
+    background: #f1f5f9;
+    margin: 0;
+    padding: 12px;
+    font-size: clamp(14px, 2.2vw, 16pt);
+    line-height: 1.5;
+  }}
+  .toolbar {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #0f2942;
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border-bottom: 3px solid #c5963a;
+    margin-bottom: 14px;
+  }}
+  .print-btn {{
+    background: #c5963a;
+    color: #091a2b;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    min-height: 42px;
+    font-family: inherit;
+    font-size: clamp(14px, 2.2vw, 16pt);
+    font-weight: 800;
+    cursor: pointer;
+  }}
+  .print-btn:hover {{
+    filter: brightness(0.95);
+  }}
+  .sheet {{
+    background: #ffffff;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+  }}
+  .top {{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 3px solid #c5963a;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }}
+  .top h1 {{
+    margin: 0;
+    font-size: clamp(17px, 2.8vw, 16pt);
+    color: #0f2942;
+    font-weight: 800;
+  }}
+  .top p {{
+    margin: 4px 0 0;
+    font-size: clamp(13px, 2.1vw, 16pt);
+    color: #334155;
+    font-weight: 600;
+  }}
+  .meta {{
+    font-size: clamp(13px, 2vw, 16pt);
+    color: #1e293b;
+  }}
+  .cards {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }}
+  .card {{
+    border: 1px solid #cbd5e1;
+    border-top: 4px solid #0f2942;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    text-align: center;
+  }}
+  .card .lbl {{
+    font-size: clamp(13px, 2vw, 16pt);
+    color: #475569;
+    font-weight: 700;
+  }}
+  .card .val {{
+    font-size: clamp(18px, 3vw, 16pt);
+    color: #0f2942;
+    font-weight: 800;
+    margin-top: 2px;
+  }}
+  .card .sub {{
+    font-size: clamp(12px, 1.9vw, 16pt);
+    color: #047857;
+    font-weight: 700;
+    margin-top: 2px;
+  }}
+  .desktop-table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16pt;
+  }}
+  .desktop-table th {{
+    background: #0f2942;
+    color: #ffffff;
+    padding: 8px 6px;
+    border: 1px solid #1e3a5f;
+    text-align: center;
+    font-weight: 800;
+  }}
+  .desktop-table td {{
+    padding: 7px 6px;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+    color: #0f172a;
+    word-break: break-word;
+  }}
+  .desktop-table tr:nth-child(even) td {{
+    background: #f8fafc;
+  }}
+  .mobile-cards {{
+    display: none;
+  }}
+  .m-card {{
+    border: 1px solid #cbd5e1;
+    border-right: 4px solid #0f2942;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #ffffff;
+  }}
+  .m-head {{
+    font-weight: 800;
+    color: #0f2942;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    font-size: 15px;
+  }}
+  .m-row {{
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 3px 0;
+    border-bottom: 1px dashed #f1f5f9;
+    font-size: 14px;
+  }}
+  .m-row:last-child {{
+    border-bottom: none;
+  }}
+  .m-key {{
+    font-weight: 700;
+    color: #475569;
+    flex-shrink: 0;
+  }}
+  .m-val {{
+    font-weight: 700;
+    color: #0f172a;
+    text-align: left;
+    word-break: break-word;
+  }}
+  .note {{
+    margin-top: 12px;
+    font-size: clamp(12px, 1.9vw, 16pt);
+    color: #475569;
+  }}
+  @media (max-width: 767.98px) {{
+    .desktop-table-wrap {{
+      display: none;
+    }}
+    .mobile-cards {{
+      display: block;
+    }}
+    .cards {{
+      grid-template-columns: repeat(2, 1fr);
+    }}
+  }}
+  @media print {{
+    body {{
+      background: #ffffff;
+      padding: 0;
+    }}
+    .toolbar {{
+      display: none;
+    }}
+    .sheet {{
+      border: none;
+      padding: 0;
+    }}
+    .desktop-table-wrap {{
+      display: block !important;
+    }}
+    .mobile-cards {{
+      display: none !important;
+    }}
+  }}
 </style>
 </head>
 <body>
+<div class="toolbar">
+  <span>معاينة التقرير — جاهز للطباعة أو الحفظ بصيغة PDF</span>
+  <button type="button" class="print-btn" onclick="window.print()">طباعة / حفظ PDF</button>
+</div>
+<div class="sheet">
   <div class="top">
     <div>
-      <h2>{title}</h2>
-      <p>{subtitle}</p>
+      <h1>{safe_title}</h1>
+      <p>{safe_subtitle}</p>
     </div>
-    <div class="meta">
-      <div><strong>الهيئة:</strong> بلدية الخيثر</div>
-      <div><strong>الوقت:</strong> {now_str}</div>
-    </div>
+    <div class="meta">تاريخ الإصدار: <strong>{safe_now}</strong></div>
   </div>
   <div class="cards">{cards_html}</div>
-  <table>
-    <thead><tr>{ths_html}</tr></thead>
-    <tbody>{trs_html}</tbody>
-  </table>
+  <div class="desktop-table-wrap">
+    <table class="desktop-table">
+      <thead><tr>{ths_html}</tr></thead>
+      <tbody>{trs_html}</tbody>
+    </table>
+  </div>
+  <div class="mobile-cards">{mobile_cards_html}</div>
   {note_html}
-  <div class="foot">السلطة الوطنية المستقلة للانتخابات — بلدية الخيثر • 28 نوفمبر 2026</div>
+</div>
 </body>
 </html>"""
-        pdf_bytes = HTML(string=html_doc).write_pdf()
-    except Exception:
-        # 2) Fallback: ReportLab with Arabic TTF + reshaper/bidi at 16pt (avoids '?' glyphs)
-        try:
-            pdf_bytes = _build_large_arabic_pdf_bytes(title, subtitle, cards, headers, rows, now_str)
-        except Exception:
-            pdf_bytes = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
 
     return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
+        html_doc,
+        mimetype="text/html; charset=utf-8",
         headers={
             "Content-Disposition": f"inline; filename={ascii_name}; filename*=UTF-8''{quote(arabic_name)}"
         },
     )
 
 
-@app.route("/admin/pdf/absences")
+@app.route("/admin/print_absences_pdf")
 def admin_print_absences_pdf():
     if session.get("role") != "admin":
         return redirect(url_for("login"))
 
     center_filter = request.args.get("center_id", "all")
     conn = get_db()
-    ensure_turnout_schema(conn)
 
     totals = conn.execute("""
         SELECT
@@ -2511,52 +2598,55 @@ def admin_print_absences_pdf():
 
     query = "SELECT * FROM election_staff WHERE status = 'غائب'"
     params = []
-    center_label = "جميع مراكز التصويت"
+    center_label = "جميع المراكز الخمسة"
     if center_filter != "all":
         query += " AND center_id = ?"
         params.append(int(center_filter))
         c_row = conn.execute("SELECT center_name FROM centers WHERE center_id = ?", (int(center_filter),)).fetchone()
         if c_row:
             center_label = c_row["center_name"]
+
     query += " ORDER BY center_id, office_name, id"
     absentees = conn.execute(query, params).fetchall()
     conn.close()
 
     cards = [
-        {"label": "إجمالي المؤطرين", "val": totals["total"] or 0},
-        {"label": "إجمالي الحاضرين", "val": totals["present_count"] or 0},
-        {"label": "إجمالي الغائبين", "val": totals["absent_count"] or 0},
-        {"label": "الغيابات في التقرير", "val": len(absentees)},
+        {"label": "إجمالي المؤطرين", "val": str(totals["total"] or 0)},
+        {"label": "الحاضرون", "val": str(totals["present_count"] or 0)},
+        {"label": "الغائبون", "val": str(totals["absent_count"] or 0)},
+        {"label": "نطاق التقرير", "val": center_label},
     ]
-    headers = ["#", "المركز", "المكتب", "القائمة", "المهمة", "اللقب والاسم", "سبب الغياب", "المستخلف", "وقت التحديث"]
+
+    headers = ["المركز", "المكتب", "القائمة", "المهمة", "اللقب والاسم", "سبب الغياب", "المستخلف", "وقت التبليغ"]
     rows = []
-    for idx, a in enumerate(absentees, start=1):
-        rows.append([
-            idx,
-            a["center_name"],
-            a["office_name"],
-            a["list_type"],
-            a["role_title"],
-            f"{a['last_name_ar']} {a['first_name_ar']}",
-            a["absence_reason"] or "-",
-            a["replacement_name"] or "لم يعين بعد",
-            a["updated_at"] or "-",
-        ])
-    if not rows:
-        rows.append(["-", center_label, "-", "-", "-", "لا توجد غيابات مسجلة حالياً", "-", "-", "-"])
+    if absentees:
+        for a in absentees:
+            rows.append([
+                a["center_name"],
+                a["office_name"],
+                a["list_type"],
+                a["role_title"],
+                f"{a['last_name_ar']} {a['first_name_ar']}",
+                a["absence_reason"] or "-",
+                a["replacement_name"] or "لم يعين بعد",
+                a["updated_at"] or "-",
+            ])
+    else:
+        rows.append(["-", "-", "-", "-", "لا يوجد أي غياب مسجل في النطاق المحدد", "-", "-", "-"])
 
     return _render_admin_pdf_response(
-        title="تقرير الغيابات والمستخلفين — بلدية الخيثر",
-        subtitle=f"النطاق: {center_label} • يوم الاقتراع 28 نوفمبر 2026",
+        title="تقرير الغيابات والمستخلفين - بلدية الخيثر",
+        subtitle=f"انتخاب أعضاء المجالس الشعبية البلدية والولائية — 28 نوفمبر 2026 ({center_label})",
         cards=cards,
         headers=headers,
         rows=rows,
-        ascii_name="admin_absences_report.pdf",
-        arabic_name="تقرير_الغيابات_الخيثر.pdf",
+        ascii_name="absences_report_kheiter_2026.html",
+        arabic_name="تقرير_الغيابات_الخيثر_28_نوفمبر_2026.html",
+        footer_note="السلطة الوطنية المستقلة للانتخابات — المندوبية البلدية للخيثر (ولاية البيض)",
     )
 
 
-@app.route("/admin/pdf/turnout")
+@app.route("/admin/print_turnout_pdf")
 def admin_print_turnout_pdf():
     if session.get("role") != "admin":
         return redirect(url_for("login"))
@@ -2567,77 +2657,81 @@ def admin_print_turnout_pdf():
 
     t_query = "SELECT * FROM office_turnout WHERE 1=1"
     t_params = []
-    center_label = "جميع مراكز التصويت"
+    center_label = "جميع المراكز الخمسة"
     if center_filter != "all":
         t_query += " AND center_id = ?"
         t_params.append(int(center_filter))
         c_row = conn.execute("SELECT center_name FROM centers WHERE center_id = ?", (int(center_filter),)).fetchone()
         if c_row:
             center_label = c_row["center_name"]
+
     t_query += " ORDER BY center_id, id"
-    rows_db = conn.execute(t_query, t_params).fetchall()
+    raw_turnout = conn.execute(t_query, t_params).fetchall()
     conn.close()
 
-    tot_reg = sum(x["registered_voters"] or 0 for x in rows_db)
-    tot_0930 = sum(x["voters_0930"] or 0 for x in rows_db)
-    tot_1400 = sum(x["voters_1400"] or 0 for x in rows_db)
-    tot_1700 = sum(x["voters_1700"] or 0 for x in rows_db)
-    tot_1900 = sum(x["voters_1900"] or 0 for x in rows_db)
+    def calc_pct(voters, reg):
+        if not reg or reg <= 0:
+            return None
+        return round((voters / reg) * 100, 2)
 
-    p0930 = calc_municipal_turnout_pct(tot_0930, MUNICIPAL_TOTAL_REGISTERED)
-    p1400 = calc_municipal_turnout_pct(tot_1400, MUNICIPAL_TOTAL_REGISTERED)
-    p1700 = calc_municipal_turnout_pct(tot_1700, MUNICIPAL_TOTAL_REGISTERED)
-    p1900 = calc_municipal_turnout_pct(tot_1900, MUNICIPAL_TOTAL_REGISTERED)
-
-    cards = [
-        {"label": "إجمالي المسجلين (8581)", "val": MUNICIPAL_TOTAL_REGISTERED, "sub": f"محجوز المكاتب: {tot_reg}"},
-        {"label": "09:30", "val": tot_0930, "sub": f"نسبة التصويت: {p0930}%" if p0930 is not None else "-"},
-        {"label": "14:00", "val": tot_1400, "sub": f"نسبة التصويت: {p1400}%" if p1400 is not None else "-"},
-        {"label": "17:00", "val": tot_1700, "sub": f"نسبة التصويت: {p1700}%" if p1700 is not None else "-"},
-        {"label": "19:00 (النهائية)", "val": tot_1900, "sub": f"نسبة التصويت: {p1900}%" if p1900 is not None else "-"},
-    ]
-
-    headers = [
-        "المركز", "المكتب", "العدد المسجل",
-        "09:30", "نسبة (من 8581)",
-        "14:00", "نسبة (من 8581)",
-        "17:00", "نسبة (من 8581)",
-        "19:00", "نسبة (من 8581)",
-        "آخر تحديث"
-    ]
+    tot_reg = tot_0930 = tot_1400 = tot_1700 = tot_1900 = 0
     rows = []
-    for r in rows_db:
+    for r in raw_turnout:
         reg = r["registered_voters"] or 0
         v0930 = r["voters_0930"] or 0
         v1400 = r["voters_1400"] or 0
         v1700 = r["voters_1700"] or 0
         v1900 = r["voters_1900"] or 0
-        rp0930 = calc_municipal_turnout_pct(v0930, MUNICIPAL_TOTAL_REGISTERED)
-        rp1400 = calc_municipal_turnout_pct(v1400, MUNICIPAL_TOTAL_REGISTERED)
-        rp1700 = calc_municipal_turnout_pct(v1700, MUNICIPAL_TOTAL_REGISTERED)
-        rp1900 = calc_municipal_turnout_pct(v1900, MUNICIPAL_TOTAL_REGISTERED)
+        tot_reg += reg
+        tot_0930 += v0930
+        tot_1400 += v1400
+        tot_1700 += v1700
+        tot_1900 += v1900
+
+        p0930 = calc_pct(v0930, reg)
+        p1400 = calc_pct(v1400, reg)
+        p1700 = calc_pct(v1700, reg)
+        p1900 = calc_pct(v1900, reg)
+
         rows.append([
             r["center_name"],
             r["office_name"],
-            reg,
-            v0930, f"{rp0930}%" if rp0930 is not None else "-",
-            v1400, f"{rp1400}%" if rp1400 is not None else "-",
-            v1700, f"{rp1700}%" if rp1700 is not None else "-",
-            v1900, f"{rp1900}%" if rp1900 is not None else "-",
+            str(reg),
+            f"{v0930} ({p0930}%)" if p0930 is not None else str(v0930),
+            f"{v1400} ({p1400}%)" if p1400 is not None else str(v1400),
+            f"{v1700} ({p1700}%)" if p1700 is not None else str(v1700),
+            f"{v1900} ({p1900}%)" if p1900 is not None else str(v1900),
             r["updated_at"] or "-",
         ])
 
+    if not rows:
+        rows.append(["-", "-", "0", "0", "0", "0", "0", "-"])
+
+    m_pct_0930 = calc_municipal_turnout_pct(tot_0930, MUNICIPAL_TOTAL_REGISTERED)
+    m_pct_1400 = calc_municipal_turnout_pct(tot_1400, MUNICIPAL_TOTAL_REGISTERED)
+    m_pct_1700 = calc_municipal_turnout_pct(tot_1700, MUNICIPAL_TOTAL_REGISTERED)
+    m_pct_1900 = calc_municipal_turnout_pct(tot_1900, MUNICIPAL_TOTAL_REGISTERED)
+
+    cards = [
+        {"label": "هيئة الناخبين البلدية", "val": str(MUNICIPAL_TOTAL_REGISTERED), "sub": f"محجوز بالمكاتب: {tot_reg}"},
+        {"label": "المشاركة 09:30", "val": str(tot_0930), "sub": f"{m_pct_0930}%" if m_pct_0930 is not None else "-"},
+        {"label": "المشاركة 14:00", "val": str(tot_1400), "sub": f"{m_pct_1400}%" if m_pct_1400 is not None else "-"},
+        {"label": "المشاركة 17:00", "val": str(tot_1700), "sub": f"{m_pct_1700}%" if m_pct_1700 is not None else "-"},
+        {"label": "المشاركة 19:00", "val": str(tot_1900), "sub": f"{m_pct_1900}%" if m_pct_1900 is not None else "-"},
+    ]
+
+    headers = ["المركز", "المكتب", "المسجلون", "09:30", "14:00", "17:00", "19:00", "آخر تحديث"]
+
     return _render_admin_pdf_response(
-        title="تقرير نسب التصويت والمشاركة — بلدية الخيثر",
-        subtitle=f"النطاق: {center_label} • إجمالي المسجلين المعتمد: {MUNICIPAL_TOTAL_REGISTERED}",
+        title="تقرير نسب المشاركة وأعداد المصوتين - بلدية الخيثر",
+        subtitle=f"يوم الاقتراع 28 نوفمبر 2026 ({center_label})",
         cards=cards,
         headers=headers,
         rows=rows,
-        ascii_name="admin_turnout_report.pdf",
-        arabic_name="تقرير_نسب_التصويت_الخيثر.pdf",
-        footer_note=f"تنويه: تُحسب نسب التصويت على أساس إجمالي المسجلين المعتمد ({MUNICIPAL_TOTAL_REGISTERED}) ومتاح للأدمن فقط.",
+        ascii_name="turnout_report_kheiter_2026.html",
+        arabic_name="تقرير_نسب_المشاركة_الخيثر_28_نوفمبر_2026.html",
+        footer_note="السلطة الوطنية المستقلة للانتخابات — المندوبية البلدية للخيثر (ولاية البيض)",
     )
-
 
 
 if __name__ == "__main__":
