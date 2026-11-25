@@ -962,6 +962,9 @@ TEMPLATES = {
         <button type="button" class="btn btn-gov-gold btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#importCsvModal">
             استرجاع البيانات من CSV
         </button>
+        <button type="button" class="btn btn-outline-dark btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#changePasswordsModal">
+            تغيير كلمات السر 🔑
+        </button>
         <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#resetDataModal">
             تصفير البيانات (إعادة من الصفر)
         </button>
@@ -1315,6 +1318,55 @@ TEMPLATES = {
         </div>
     </div>
 </div>
+<div class="modal fade" id="changePasswordsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_change_passwords') }}">
+                <div class="modal-header text-white" style="background-color:#0f2942;">
+                    <h5 class="modal-title fw-bold">إدارة وتغيير كلمات السر (المندوب البلدي ورؤساء المراكز)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small mb-3">
+                        <strong>تنبيه:</strong> اترك حقل كلمة السر فارغاً لأي حساب لا تريد تغيير كلمته الحالية. عند إدخال كلمة سر جديدة وحفظها، تُحدّث فوراً وتسجيل الدخول بها مباشرة.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-end">الحساب / الصفة</th>
+                                    <th>كلمة السر الحالية</th>
+                                    <th>كلمة السر الجديدة</th>
+                                    <th>آخر تعديل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for uname, uinfo in managed_users.items() %}
+                                <tr>
+                                    <td class="text-end fw-bold">
+                                        {{ uinfo.title }}<br>
+                                        <small class="text-muted">({{ uname }})</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary fs-6">{{ uinfo.password }}</span></td>
+                                    <td>
+                                        <input type="text" name="pw_{{ uname }}" class="form-control form-control-sm text-center"
+                                               placeholder="كلمة سر جديدة..." autocomplete="off">
+                                    </td>
+                                    <td class="small text-muted">{{ uinfo.password_updated_at or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-gov-primary fw-bold px-4">حفظ كلمات السر</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 """,
 }
@@ -1374,7 +1426,41 @@ def ensure_turnout_schema(conn):
             INSERT OR IGNORE INTO office_turnout (center_id, center_name, office_name)
             VALUES (?, ?, ?)
         """, (off["center_id"], off["center_name"], off["office_name"]))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_passwords (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL,
+            updated_at TEXT DEFAULT ''
+        );
+    """)
+    for uname, uinfo in USERS.items():
+        conn.execute("""
+            INSERT OR IGNORE INTO user_passwords (username, password, updated_at)
+            VALUES (?, ?, '')
+        """, (uname, uinfo["password"]))
     conn.commit()
+
+
+def get_effective_users(conn=None):
+    close_after = False
+    if conn is None:
+        conn = get_db()
+        close_after = True
+    ensure_turnout_schema(conn)
+    db_rows = conn.execute("SELECT username, password, updated_at FROM user_passwords").fetchall()
+    pw_map = {r["username"]: (r["password"], r["updated_at"]) for r in db_rows}
+    users_out = {}
+    for uname, info in USERS.items():
+        item = dict(info)
+        if uname in pw_map and pw_map[uname][0]:
+            item["password"] = pw_map[uname][0]
+            item["password_updated_at"] = pw_map[uname][1]
+        else:
+            item["password_updated_at"] = ""
+        users_out[uname] = item
+    if close_after:
+        conn.close()
+    return users_out
 
 
 def init_database():
@@ -1438,10 +1524,11 @@ def authority_logo():
 @app.route("/", methods=["GET", "POST"])
 def login():
     init_database()
+    effective_users = get_effective_users()
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
-        user = USERS.get(username)
+        user = effective_users.get(username)
         if user and user["password"] == password:
             session["username"] = username
             session["role"] = user["role"]
@@ -1451,7 +1538,7 @@ def login():
                 return redirect(url_for("admin_dashboard"))
             return redirect(url_for("center_dashboard", view="absences"))
         flash("اسم المستخدم أو كلمة المرور غير صحيحة", "danger")
-    return render_template_string(TEMPLATES["login.html"], users=USERS)
+    return render_template_string(TEMPLATES["login.html"], users=effective_users)
 
 
 @app.route("/logout")
@@ -1793,6 +1880,7 @@ def admin_dashboard():
         "pct_1900": calc_pct(total_1900, total_reg),
     }
 
+    managed_users = get_effective_users()
     return render_template_string(
         TEMPLATES["admin_dashboard.html"],
         active_tab=active_tab,
@@ -1803,6 +1891,7 @@ def admin_dashboard():
         turnout_offices=turnout_offices,
         center_turnout_summary=center_turnout_summary,
         turnout_overall=turnout_overall,
+        managed_users=managed_users,
     )
 
 
@@ -1886,7 +1975,8 @@ def reset_all_data():
         return redirect(url_for("login"))
 
     confirm_password = request.form.get("confirm_password", "").strip()
-    admin_password = USERS["admin"]["password"]
+    effective_users = get_effective_users()
+    admin_password = effective_users["admin"]["password"]
 
     if confirm_password != admin_password:
         flash("كلمة مرور المندوب البلدي غير صحيحة! لم يتم تصفير البيانات.", "danger")
@@ -2151,6 +2241,39 @@ def import_csv_data():
     except Exception as exc:
         flash(f"حدث خطأ أثناء قراءة ملف CSV: {exc}", "danger")
         return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/change_passwords", methods=["POST"])
+def admin_change_passwords():
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    ensure_turnout_schema(conn)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    updated_titles = []
+
+    for uname, uinfo in USERS.items():
+        new_pw = request.form.get(f"pw_{uname}", "").strip()
+        if new_pw:
+            conn.execute("""
+                INSERT INTO user_passwords (username, password, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(username) DO UPDATE SET
+                    password = excluded.password,
+                    updated_at = excluded.updated_at
+            """, (uname, new_pw, now_str))
+            updated_titles.append(uinfo["title"])
+
+    conn.commit()
+    conn.close()
+
+    if updated_titles:
+        flash("تم تحديث كلمات السر بنجاح للحسابات التالية: " + " — ".join(updated_titles), "success")
+    else:
+        flash("لم يتم إدخال أي كلمة سر جديدة لتحديثها.", "info")
+
+    return redirect(url_for("admin_dashboard", tab=request.args.get("tab", "absences"), center_id=request.args.get("center_id", "all")))
 
 
 if __name__ == "__main__":
