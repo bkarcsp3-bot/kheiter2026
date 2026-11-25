@@ -2287,105 +2287,134 @@ def admin_change_passwords():
     return redirect(url_for("admin_dashboard", tab=request.args.get("tab", "absences"), center_id=request.args.get("center_id", "all")))
 
 
-def _pdf_escape_pdfdoc(text):
-    """Encode string safely for a minimal PDF 1.4 text stream without raising exceptions."""
+def _shape_arabic_for_draw(text):
+    """Reshape Arabic letters and apply BiDi ordering when libraries are available."""
     s = str(text or "")
-    out = []
-    for ch in s:
-        code = ord(ch)
-        if ch in ("\\", "(", ")"):
-            out.append("\\" + ch)
-        elif ch in ("\r", "\n"):
-            out.append(" ")
-        elif 32 <= code <= 126:
-            out.append(ch)
-        elif 160 <= code <= 255:
-            out.append(chr(code))
-        else:
-            # Replace non-Latin1 characters with '?' or ASCII transliteration hint if needed
-            out.append("?")
-    return "".join(out)
+    try:
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        return get_display(arabic_reshaper.reshape(s))
+    except Exception:
+        return s
 
 
-def _build_minimal_pdf_bytes(title, subtitle, cards, headers, rows, now_str):
-    """Generate a valid standalone PDF 1.4 document using standard Type1 Helvetica (zero third-party deps)."""
-    lines = []
-    # Page 1 landscape A4: 842 x 595 pt
-    lines.append("BT")
-    lines.append("/F2 14 Tf")
-    lines.append("36 555 Td")
-    lines.append(f"({_pdf_escape_pdfdoc(title)}) Tj")
+def _find_arabic_ttf_font():
+    """Search system/common paths for a TrueType font that supports Arabic glyphs."""
+    candidates = [
+        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf",
+        "C:\\Windows\\Fonts\\tahoma.ttf",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
 
-    lines.append("/F1 9 Tf")
-    lines.append("0 -16 Td")
-    lines.append(f"({_pdf_escape_pdfdoc(subtitle)}) Tj")
 
-    lines.append("0 -14 Td")
-    lines.append(f"({_pdf_escape_pdfdoc('Generated: ' + now_str + ' | Registered Base: ' + str(MUNICIPAL_TOTAL_REGISTERED))}) Tj")
+def _build_large_arabic_pdf_bytes(title, subtitle, cards, headers, rows, now_str):
+    """Build a crisp, large-font (16pt) PDF via ReportLab with Arabic TTF support and clean RTL alignment."""
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.pdfgen import canvas
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    buf = io.BytesIO()
+    page_w, page_h = landscape(A4)
+    c = canvas.Canvas(buf, pagesize=landscape(A4))
+    c.setTitle("Kheiter Election Report")
+
+    font_name = "Helvetica"
+    font_bold = "Helvetica-Bold"
+    ttf_path = _find_arabic_ttf_font()
+    if ttf_path:
+        try:
+            pdfmetrics.registerFont(TTFont("ArLargeFont", ttf_path))
+            font_name = "ArLargeFont"
+            font_bold = "ArLargeFont"
+        except Exception:
+            font_name = "Helvetica"
+            font_bold = "Helvetica-Bold"
+
+    margin_x = 28
+    usable_w = page_w - 2 * margin_x
+    right_x = page_w - margin_x
+
+    def draw_header_block(y_top):
+        c.setFont(font_bold, 16)
+        c.setFillColorRGB(0.059, 0.161, 0.259)
+        c.drawRightString(right_x, y_top, _shape_arabic_for_draw(title))
+
+        c.setFont(font_name, 16)
+        c.setFillColorRGB(0.278, 0.333, 0.412)
+        y_sub = y_top - 22
+        c.drawRightString(right_x, y_sub, _shape_arabic_for_draw(subtitle))
+
+        c.setFont(font_name, 16)
+        c.setFillColorRGB(0.392, 0.455, 0.545)
+        y_meta = y_sub - 22
+        c.drawRightString(right_x, y_meta, _shape_arabic_for_draw(f"الخيثر • {now_str}"))
+        return y_meta - 12
+
+    y = draw_header_block(page_h - 32)
 
     if cards:
-        card_summary = "  |  ".join(f"{c.get('label', '')}: {c.get('val', '')}" for c in cards)
-        lines.append("/F2 9 Tf")
-        lines.append("0 -18 Td")
-        lines.append(f"({_pdf_escape_pdfdoc(card_summary[:140])}) Tj")
+        card_summary = "  |  ".join(f"{item.get('label', '')}: {item.get('val', '')}" for item in cards)
+        c.setFont(font_bold, 16)
+        c.setFillColorRGB(0.059, 0.161, 0.259)
+        y -= 18
+        c.drawRightString(right_x, y, _shape_arabic_for_draw(card_summary[:110]))
+        y -= 14
 
-    lines.append("/F2 8 Tf")
-    lines.append("0 -20 Td")
-    hdr_line = " | ".join(str(h) for h in headers)
-    lines.append(f"({_pdf_escape_pdfdoc(hdr_line[:150])}) Tj")
+    cols_count = max(len(headers), 1)
+    col_w = usable_w / cols_count
+    row_h = 26
 
-    lines.append("/F1 8 Tf")
-    y_pos = 455
-    for r in rows[:42]:
-        y_pos -= 11
-        if y_pos < 35:
-            break
-        row_txt = " | ".join(str(col) for col in r)
-        lines.append("0 -11 Td")
-        lines.append(f"({_pdf_escape_pdfdoc(row_txt[:160])}) Tj")
+    def draw_table_header(y_pos):
+        c.setFillColorRGB(0.059, 0.161, 0.259)
+        c.rect(margin_x, y_pos - row_h, usable_w, row_h, stroke=1, fill=1)
+        c.setFont(font_bold, 16)
+        c.setFillColorRGB(1, 1, 1)
+        for i, h_txt in enumerate(headers):
+            # Right-to-left column order
+            col_x = right_x - (i + 1) * col_w
+            c.rect(col_x, y_pos - row_h, col_w, row_h, stroke=1, fill=0)
+            c.drawCentredString(col_x + col_w / 2, y_pos - row_h + 7, _shape_arabic_for_draw(h_txt))
+        return y_pos - row_h
 
-    lines.append("ET")
-    stream_data = ("\n".join(lines) + "\n").encode("latin-1", errors="replace")
+    y = draw_table_header(y)
+    c.setFont(font_name, 16)
 
-    objs = []
-    objs.append(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
-    objs.append(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
-    objs.append(
-        b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] "
-        b"/Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> "
-        b"/Contents 6 0 R >>\nendobj\n"
-    )
-    objs.append(b"4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
-    objs.append(b"5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n")
-    objs.append(
-        f"6 0 obj\n<< /Length {len(stream_data)} >>\nstream\n".encode("ascii")
-        + stream_data
-        + b"endstream\nendobj\n"
-    )
+    for idx_r, r in enumerate(rows):
+        if y - row_h < 28:
+            c.showPage()
+            y = draw_header_block(page_h - 32)
+            y = draw_table_header(y)
+            c.setFont(font_name, 16)
 
-    pdf = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for obj in objs:
-        offsets.append(len(pdf))
-        pdf.extend(obj)
+        if idx_r % 2 == 1:
+            c.setFillColorRGB(0.973, 0.980, 0.988)
+            c.rect(margin_x, y - row_h, usable_w, row_h, stroke=0, fill=1)
 
-    xref_pos = len(pdf)
-    pdf.extend(f"xref\n0 {len(offsets)}\n".encode("ascii"))
-    pdf.extend(b"0000000000 65535 f \n")
-    for off in offsets[1:]:
-        pdf.extend(f"{off:010d} 00000 n \n".encode("ascii"))
+        c.setFillColorRGB(0.059, 0.090, 0.165)
+        for i in range(cols_count):
+            val = r[i] if i < len(r) else ""
+            col_x = right_x - (i + 1) * col_w
+            c.rect(col_x, y - row_h, col_w, row_h, stroke=1, fill=0)
+            c.drawCentredString(col_x + col_w / 2, y - row_h + 7, _shape_arabic_for_draw(str(val)))
+        y -= row_h
 
-    pdf.extend(
-        f"trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode("ascii")
-    )
-    return bytes(pdf)
+    c.save()
+    return buf.getvalue()
 
 
 def _render_admin_pdf_response(title, subtitle, cards, headers, rows, ascii_name, arabic_name, footer_note=""):
     from urllib.parse import quote
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 1) Try WeasyPrint first if available and working
+    # 1) Primary: WeasyPrint with explicit large Arabic font (16pt)
     try:
         from weasyprint import HTML
         card_blocks = []
@@ -2407,23 +2436,23 @@ def _render_admin_pdf_response(title, subtitle, cards, headers, rows, ascii_name
 <head>
 <meta charset="UTF-8">
 <style>
-  @page {{ size: A4 landscape; margin: 12mm; }}
-  body {{ font-family: 'DejaVu Sans', 'Arial', sans-serif; direction: rtl; color: #0f172a; margin: 0; font-size: 10pt; }}
+  @page {{ size: A4 landscape; margin: 10mm; }}
+  body {{ font-family: 'Noto Naskh Arabic', 'DejaVu Sans', 'Arial', sans-serif; direction: rtl; color: #0f172a; margin: 0; font-size: 16pt; line-height: 1.45; }}
   .top {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #c5963a; padding-bottom: 8px; margin-bottom: 12px; }}
-  .top h2 {{ margin: 0; font-size: 15pt; color: #0f2942; }}
-  .top p {{ margin: 3px 0 0; font-size: 9pt; color: #475569; }}
-  .meta {{ text-align: left; font-size: 8.5pt; color: #334155; }}
-  .cards {{ display: flex; gap: 8px; margin-bottom: 12px; }}
-  .card {{ flex: 1; border: 1px solid #cbd5e1; border-top: 3px solid #0f2942; border-radius: 6px; padding: 7px 8px; background: #f8fafc; text-align: center; }}
-  .card .lbl {{ font-size: 8pt; color: #475569; font-weight: bold; }}
-  .card .val {{ font-size: 13pt; color: #0f2942; font-weight: bold; margin-top: 2px; }}
-  .card .sub {{ font-size: 8pt; color: #047857; font-weight: bold; margin-top: 2px; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: 8.8pt; }}
-  th {{ background: #0f2942; color: #ffffff; padding: 6px 5px; border: 1px solid #1e3a5f; text-align: center; }}
-  td {{ padding: 5px; border: 1px solid #cbd5e1; text-align: center; }}
+  .top h2 {{ margin: 0; font-size: 16pt; color: #0f2942; font-weight: bold; }}
+  .top p {{ margin: 4px 0 0; font-size: 16pt; color: #475569; }}
+  .meta {{ text-align: left; font-size: 16pt; color: #334155; }}
+  .cards {{ display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }}
+  .card {{ flex: 1; min-width: 150px; border: 1px solid #cbd5e1; border-top: 3px solid #0f2942; border-radius: 6px; padding: 8px; background: #f8fafc; text-align: center; font-size: 16pt; }}
+  .card .lbl {{ font-size: 16pt; color: #475569; font-weight: bold; }}
+  .card .val {{ font-size: 16pt; color: #0f2942; font-weight: bold; margin-top: 2px; }}
+  .card .sub {{ font-size: 16pt; color: #047857; font-weight: bold; margin-top: 2px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 16pt; }}
+  th {{ background: #0f2942; color: #ffffff; padding: 6px 5px; border: 1px solid #1e3a5f; text-align: center; font-size: 16pt; }}
+  td {{ padding: 5px; border: 1px solid #cbd5e1; text-align: center; font-size: 16pt; }}
   tr:nth-child(even) {{ background: #f8fafc; }}
-  .note {{ margin-top: 10px; padding: 7px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 5px; font-size: 8.5pt; color: #78350f; }}
-  .foot {{ margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 8pt; color: #64748b; }}
+  .note {{ margin-top: 10px; padding: 8px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 5px; font-size: 16pt; color: #78350f; }}
+  .foot {{ margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 16pt; color: #64748b; }}
 </style>
 </head>
 <body>
@@ -2433,8 +2462,8 @@ def _render_admin_pdf_response(title, subtitle, cards, headers, rows, ascii_name
       <p>{subtitle}</p>
     </div>
     <div class="meta">
-      <div><strong>الهيئة:</strong> المندوبية البلدية — بلدية الخيثر</div>
-      <div><strong>تاريخ الطباعة:</strong> {now_str}</div>
+      <div><strong>الهيئة:</strong> بلدية الخيثر</div>
+      <div><strong>الوقت:</strong> {now_str}</div>
     </div>
   </div>
   <div class="cards">{cards_html}</div>
@@ -2443,14 +2472,14 @@ def _render_admin_pdf_response(title, subtitle, cards, headers, rows, ascii_name
     <tbody>{trs_html}</tbody>
   </table>
   {note_html}
-  <div class="foot">السلطة الوطنية المستقلة للانتخابات — بلدية الخيثر • 28 نوفمبر 2026 (خاص بالمندوب البلدي)</div>
+  <div class="foot">السلطة الوطنية المستقلة للانتخابات — بلدية الخيثر • 28 نوفمبر 2026</div>
 </body>
 </html>"""
         pdf_bytes = HTML(string=html_doc).write_pdf()
     except Exception:
-        # 2) Guaranteed fallback: valid PDF 1.4 generated directly in Python
+        # 2) Fallback: ReportLab with Arabic TTF + reshaper/bidi at 16pt (avoids '?' glyphs)
         try:
-            pdf_bytes = _build_minimal_pdf_bytes(title, subtitle, cards, headers, rows, now_str)
+            pdf_bytes = _build_large_arabic_pdf_bytes(title, subtitle, cards, headers, rows, now_str)
         except Exception:
             pdf_bytes = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
 
