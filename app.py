@@ -957,8 +957,10 @@ TEMPLATES = {
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ url_for('admin_dashboard', tab=active_tab, center_id=center_filter) }}" class="btn btn-outline-secondary btn-sm fw-bold">تحديث ↻</a>
-        <a href="{{ url_for('export_absences_csv') }}" class="btn btn-success btn-sm fw-bold">تحميل تقرير الغيابات</a>
-        <a href="{{ url_for('export_turnout_csv') }}" class="btn btn-gov-primary btn-sm">تحميل تقرير نسب المشاركة</a>
+        <a href="{{ url_for('export_absences_csv') }}" class="btn btn-success btn-sm fw-bold">تحميل تقرير الغيابات (CSV)</a>
+        <a href="{{ url_for('export_turnout_csv') }}" class="btn btn-gov-primary btn-sm">تحميل تقرير نسب المشاركة (CSV)</a>
+        <a href="{{ url_for('admin_print_absences_pdf', center_id=center_filter) }}" target="_blank" class="btn btn-outline-success btn-sm fw-bold">طباعة تقرير الغيابات (PDF)</a>
+        <a href="{{ url_for('admin_print_turnout_pdf', center_id=center_filter) }}" target="_blank" class="btn btn-outline-primary btn-sm fw-bold">طباعة تقرير نسب التصويت (PDF)</a>
         <button type="button" class="btn btn-gov-gold btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#importCsvModal">
             استرجاع البيانات من CSV
         </button>
@@ -1103,8 +1105,9 @@ TEMPLATES = {
 <div class="row g-3 mb-4">
     <div class="col-md-2">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">العدد المسجل (المحجوز)</span>
-            <h3 class="fw-bold mb-0 mt-1 text-dark">{{ turnout_overall.registered_voters }}</h3>
+            <span class="text-muted small fw-bold">إجمالي المسجلين (8581)</span>
+            <h3 class="fw-bold mb-0 mt-1 text-dark">{{ turnout_overall.municipal_total_registered }}</h3>
+            <small class="text-muted">المحجوز بالمكاتب: {{ turnout_overall.registered_voters }}</small>
         </div>
     </div>
     <div class="col-md-2">
@@ -1379,6 +1382,13 @@ TURNOUT_SLOTS = [
     ("slot_1700", "الفترة الثالثة (17:00)"),
     ("slot_1900", "الفترة الأخيرة (19:00)"),
 ]
+
+MUNICIPAL_TOTAL_REGISTERED = 8581
+
+def calc_municipal_turnout_pct(voters, registered_total=MUNICIPAL_TOTAL_REGISTERED):
+    if not registered_total or registered_total <= 0:
+        return None
+    return round((voters / registered_total) * 100, 2)
 
 USERS = {
     "admin": {"password": os.environ.get("ADMIN_PASS", "2026"), "role": "admin", "center_id": None, "title": "المندوب البلدي - بلدية الخيثر"},
@@ -1870,14 +1880,15 @@ def admin_dashboard():
         "reported_1700": reported_1700,
         "reported_1900": reported_1900,
         "registered_voters": total_reg,
+        "municipal_total_registered": MUNICIPAL_TOTAL_REGISTERED,
         "voters_0930": total_0930,
-        "pct_0930": calc_pct(total_0930, total_reg),
+        "pct_0930": calc_municipal_turnout_pct(total_0930, MUNICIPAL_TOTAL_REGISTERED),
         "voters_1400": total_1400,
-        "pct_1400": calc_pct(total_1400, total_reg),
+        "pct_1400": calc_municipal_turnout_pct(total_1400, MUNICIPAL_TOTAL_REGISTERED),
         "voters_1700": total_1700,
-        "pct_1700": calc_pct(total_1700, total_reg),
+        "pct_1700": calc_municipal_turnout_pct(total_1700, MUNICIPAL_TOTAL_REGISTERED),
         "voters_1900": total_1900,
-        "pct_1900": calc_pct(total_1900, total_reg),
+        "pct_1900": calc_municipal_turnout_pct(total_1900, MUNICIPAL_TOTAL_REGISTERED),
     }
 
     managed_users = get_effective_users()
@@ -2274,6 +2285,243 @@ def admin_change_passwords():
         flash("لم يتم إدخال أي كلمة سر جديدة لتحديثها.", "info")
 
     return redirect(url_for("admin_dashboard", tab=request.args.get("tab", "absences"), center_id=request.args.get("center_id", "all")))
+
+
+def _render_admin_pdf_response(title, subtitle, cards, headers, rows, ascii_name, arabic_name, footer_note=""):
+    from urllib.parse import quote
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    card_blocks = []
+    for item in cards:
+        sub_part = f'<div class="sub">{item["sub"]}</div>' if item.get("sub") else ""
+        card_blocks.append(
+            f'<div class="card"><div class="lbl">{item["label"]}</div><div class="val">{item["val"]}</div>{sub_part}</div>'
+        )
+    cards_html = "".join(card_blocks)
+    ths_html = "".join(f"<th>{h}</th>" for h in headers)
+    trs_html = "".join(
+        "<tr>" + "".join(f"<td>{col}</td>" for col in r) + "</tr>"
+        for r in rows
+    )
+    note_html = f'<div class="note">{footer_note}</div>' if footer_note else ""
+
+    html_doc = f"""<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {{ size: A4 landscape; margin: 12mm; }}
+  body {{ font-family: 'DejaVu Sans', 'Arial', sans-serif; direction: rtl; color: #0f172a; margin: 0; font-size: 10pt; }}
+  .top {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #c5963a; padding-bottom: 8px; margin-bottom: 12px; }}
+  .top h2 {{ margin: 0; font-size: 15pt; color: #0f2942; }}
+  .top p {{ margin: 3px 0 0; font-size: 9pt; color: #475569; }}
+  .meta {{ text-align: left; font-size: 8.5pt; color: #334155; }}
+  .cards {{ display: flex; gap: 8px; margin-bottom: 12px; }}
+  .card {{ flex: 1; border: 1px solid #cbd5e1; border-top: 3px solid #0f2942; border-radius: 6px; padding: 7px 8px; background: #f8fafc; text-align: center; }}
+  .card .lbl {{ font-size: 8pt; color: #475569; font-weight: bold; }}
+  .card .val {{ font-size: 13pt; color: #0f2942; font-weight: bold; margin-top: 2px; }}
+  .card .sub {{ font-size: 8pt; color: #047857; font-weight: bold; margin-top: 2px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 8.8pt; }}
+  th {{ background: #0f2942; color: #ffffff; padding: 6px 5px; border: 1px solid #1e3a5f; text-align: center; }}
+  td {{ padding: 5px; border: 1px solid #cbd5e1; text-align: center; }}
+  tr:nth-child(even) {{ background: #f8fafc; }}
+  .note {{ margin-top: 10px; padding: 7px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 5px; font-size: 8.5pt; color: #78350f; }}
+  .foot {{ margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 8pt; color: #64748b; }}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h2>{title}</h2>
+      <p>{subtitle}</p>
+    </div>
+    <div class="meta">
+      <div><strong>الهيئة:</strong> المندوبية البلدية — بلدية الخيثر</div>
+      <div><strong>تاريخ الطباعة:</strong> {now_str}</div>
+    </div>
+  </div>
+  <div class="cards">{cards_html}</div>
+  <table>
+    <thead><tr>{ths_html}</tr></thead>
+    <tbody>{trs_html}</tbody>
+  </table>
+  {note_html}
+  <div class="foot">السلطة الوطنية المستقلة للانتخابات — بلدية الخيثر • 28 نوفمبر 2026 (خاص بالمندوب البلدي)</div>
+</body>
+</html>"""
+
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html_doc).write_pdf()
+    except Exception:
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.pdfgen import canvas
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf, pagesize=landscape(A4))
+        w, h = landscape(A4)
+        c.setTitle(ascii_name)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(40, h - 45, "Kheiter Municipality - Admin Election Report (28 Nov 2026)")
+        c.setFont("Helvetica", 10)
+        c.drawString(40, h - 70, f"Generated: {now_str} | Total Registered Voters: {MUNICIPAL_TOTAL_REGISTERED}")
+        c.showPage()
+        c.save()
+        pdf_bytes = buf.getvalue()
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename={ascii_name}; filename*=UTF-8''{quote(arabic_name)}"
+        },
+    )
+
+
+@app.route("/admin/pdf/absences")
+def admin_print_absences_pdf():
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+
+    center_filter = request.args.get("center_id", "all")
+    conn = get_db()
+    ensure_turnout_schema(conn)
+
+    totals = conn.execute("""
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'حاضر' THEN 1 ELSE 0 END) as present_count,
+            SUM(CASE WHEN status = 'غائب' THEN 1 ELSE 0 END) as absent_count
+        FROM election_staff
+    """).fetchone()
+
+    query = "SELECT * FROM election_staff WHERE status = 'غائب'"
+    params = []
+    center_label = "جميع مراكز التصويت"
+    if center_filter != "all":
+        query += " AND center_id = ?"
+        params.append(int(center_filter))
+        c_row = conn.execute("SELECT center_name FROM centers WHERE center_id = ?", (int(center_filter),)).fetchone()
+        if c_row:
+            center_label = c_row["center_name"]
+    query += " ORDER BY center_id, office_name, id"
+    absentees = conn.execute(query, params).fetchall()
+    conn.close()
+
+    cards = [
+        {"label": "إجمالي المؤطرين", "val": totals["total"] or 0},
+        {"label": "إجمالي الحاضرين", "val": totals["present_count"] or 0},
+        {"label": "إجمالي الغائبين", "val": totals["absent_count"] or 0},
+        {"label": "الغيابات في التقرير", "val": len(absentees)},
+    ]
+    headers = ["#", "المركز", "المكتب", "القائمة", "المهمة", "اللقب والاسم", "سبب الغياب", "المستخلف", "وقت التحديث"]
+    rows = []
+    for idx, a in enumerate(absentees, start=1):
+        rows.append([
+            idx,
+            a["center_name"],
+            a["office_name"],
+            a["list_type"],
+            a["role_title"],
+            f"{a['last_name_ar']} {a['first_name_ar']}",
+            a["absence_reason"] or "-",
+            a["replacement_name"] or "لم يعين بعد",
+            a["updated_at"] or "-",
+        ])
+    if not rows:
+        rows.append(["-", center_label, "-", "-", "-", "لا توجد غيابات مسجلة حالياً", "-", "-", "-"])
+
+    return _render_admin_pdf_response(
+        title="تقرير الغيابات والمستخلفين — بلدية الخيثر",
+        subtitle=f"النطاق: {center_label} • يوم الاقتراع 28 نوفمبر 2026",
+        cards=cards,
+        headers=headers,
+        rows=rows,
+        ascii_name="admin_absences_report.pdf",
+        arabic_name="تقرير_الغيابات_الخيثر.pdf",
+    )
+
+
+@app.route("/admin/pdf/turnout")
+def admin_print_turnout_pdf():
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+
+    center_filter = request.args.get("center_id", "all")
+    conn = get_db()
+    ensure_turnout_schema(conn)
+
+    t_query = "SELECT * FROM office_turnout WHERE 1=1"
+    t_params = []
+    center_label = "جميع مراكز التصويت"
+    if center_filter != "all":
+        t_query += " AND center_id = ?"
+        t_params.append(int(center_filter))
+        c_row = conn.execute("SELECT center_name FROM centers WHERE center_id = ?", (int(center_filter),)).fetchone()
+        if c_row:
+            center_label = c_row["center_name"]
+    t_query += " ORDER BY center_id, id"
+    rows_db = conn.execute(t_query, t_params).fetchall()
+    conn.close()
+
+    tot_reg = sum(x["registered_voters"] or 0 for x in rows_db)
+    tot_0930 = sum(x["voters_0930"] or 0 for x in rows_db)
+    tot_1400 = sum(x["voters_1400"] or 0 for x in rows_db)
+    tot_1700 = sum(x["voters_1700"] or 0 for x in rows_db)
+    tot_1900 = sum(x["voters_1900"] or 0 for x in rows_db)
+
+    p0930 = calc_municipal_turnout_pct(tot_0930, MUNICIPAL_TOTAL_REGISTERED)
+    p1400 = calc_municipal_turnout_pct(tot_1400, MUNICIPAL_TOTAL_REGISTERED)
+    p1700 = calc_municipal_turnout_pct(tot_1700, MUNICIPAL_TOTAL_REGISTERED)
+    p1900 = calc_municipal_turnout_pct(tot_1900, MUNICIPAL_TOTAL_REGISTERED)
+
+    cards = [
+        {"label": "إجمالي المسجلين (8581)", "val": MUNICIPAL_TOTAL_REGISTERED, "sub": f"محجوز المكاتب: {tot_reg}"},
+        {"label": "09:30", "val": tot_0930, "sub": f"نسبة التصويت: {p0930}%" if p0930 is not None else "-"},
+        {"label": "14:00", "val": tot_1400, "sub": f"نسبة التصويت: {p1400}%" if p1400 is not None else "-"},
+        {"label": "17:00", "val": tot_1700, "sub": f"نسبة التصويت: {p1700}%" if p1700 is not None else "-"},
+        {"label": "19:00 (النهائية)", "val": tot_1900, "sub": f"نسبة التصويت: {p1900}%" if p1900 is not None else "-"},
+    ]
+
+    headers = [
+        "المركز", "المكتب", "العدد المسجل",
+        "09:30", "نسبة (من 8581)",
+        "14:00", "نسبة (من 8581)",
+        "17:00", "نسبة (من 8581)",
+        "19:00", "نسبة (من 8581)",
+        "آخر تحديث"
+    ]
+    rows = []
+    for r in rows_db:
+        reg = r["registered_voters"] or 0
+        v0930 = r["voters_0930"] or 0
+        v1400 = r["voters_1400"] or 0
+        v1700 = r["voters_1700"] or 0
+        v1900 = r["voters_1900"] or 0
+        rp0930 = calc_municipal_turnout_pct(v0930, MUNICIPAL_TOTAL_REGISTERED)
+        rp1400 = calc_municipal_turnout_pct(v1400, MUNICIPAL_TOTAL_REGISTERED)
+        rp1700 = calc_municipal_turnout_pct(v1700, MUNICIPAL_TOTAL_REGISTERED)
+        rp1900 = calc_municipal_turnout_pct(v1900, MUNICIPAL_TOTAL_REGISTERED)
+        rows.append([
+            r["center_name"],
+            r["office_name"],
+            reg,
+            v0930, f"{rp0930}%" if rp0930 is not None else "-",
+            v1400, f"{rp1400}%" if rp1400 is not None else "-",
+            v1700, f"{rp1700}%" if rp1700 is not None else "-",
+            v1900, f"{rp1900}%" if rp1900 is not None else "-",
+            r["updated_at"] or "-",
+        ])
+
+    return _render_admin_pdf_response(
+        title="تقرير نسب التصويت والمشاركة — بلدية الخيثر",
+        subtitle=f"النطاق: {center_label} • إجمالي المسجلين المعتمد: {MUNICIPAL_TOTAL_REGISTERED}",
+        cards=cards,
+        headers=headers,
+        rows=rows,
+        ascii_name="admin_turnout_report.pdf",
+        arabic_name="تقرير_نسب_التصويت_الخيثر.pdf",
+        footer_note=f"تنويه: تُحسب نسب التصويت على أساس إجمالي المسجلين المعتمد ({MUNICIPAL_TOTAL_REGISTERED}) ومتاح للأدمن فقط.",
+    )
+
 
 
 if __name__ == "__main__":
