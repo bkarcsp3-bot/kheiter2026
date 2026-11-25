@@ -814,7 +814,7 @@ TEMPLATES = {
 
 <div class="card p-3">
     <div class="alert alert-warning-soft small mb-3">
-        <strong>إرشاد التسجيل:</strong> يُدخل عدد المصوتين التراكمي لكل مكتب في المواقيت الأربعة (<strong>09:30</strong>، <strong>14:00</strong>، <strong>17:00</strong>، <strong>19:00</strong>) ثم يُضغط على زر <strong>حفظ</strong> مقابل المكتب.
+        <strong>إرشاد التسجيل:</strong> يُدخل عدد المصوتين لكل مكتب في المواقيت الأربعة (<strong>09:30</strong>، <strong>14:00</strong>، <strong>17:00</strong>، <strong>19:00</strong>) في أي وقت ودون قيود، ثم يُضغط على زر <strong>حفظ</strong> مقابل المكتب.
     </div>
 
     <div class="table-responsive">
@@ -1112,30 +1112,36 @@ TEMPLATES = {
                     <td class="text-end fw-bold">{{ item.center_name }}</td>
                     <td class="text-end fw-bold">{{ item.office_name }}</td>
                     <td>
-                        <form method="POST" action="{{ url_for('update_registered_voters', turnout_id=item.id) }}" class="d-flex justify-content-center gap-1">
+                        <form id="adminTurnoutForm{{ item.id }}" method="POST" action="{{ url_for('admin_update_turnout', turnout_id=item.id) }}" class="d-flex justify-content-center gap-1">
                             <input type="hidden" name="current_center_filter" value="{{ center_filter }}">
                             <input type="number" min="0" name="registered_voters" value="{{ item.registered_voters }}"
-                                   class="form-control form-control-sm text-center" style="width:90px;">
-                            <button type="submit" class="btn btn-sm btn-dark">حفظ</button>
+                                   class="form-control form-control-sm text-center" style="width:85px;">
                         </form>
                     </td>
                     <td>
-                        <div class="fw-bold">{{ item.voters_0930 }}</div>
+                        <input type="number" min="0" name="voters_0930" value="{{ item.voters_0930 }}" form="adminTurnoutForm{{ item.id }}"
+                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
                         {% if item.pct_0930 is not none %}<span class="badge bg-primary">{{ item.pct_0930 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td>
-                        <div class="fw-bold">{{ item.voters_1400 }}</div>
+                        <input type="number" min="0" name="voters_1400" value="{{ item.voters_1400 }}" form="adminTurnoutForm{{ item.id }}"
+                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
                         {% if item.pct_1400 is not none %}<span class="badge bg-info text-dark">{{ item.pct_1400 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td>
-                        <div class="fw-bold">{{ item.voters_1700 }}</div>
+                        <input type="number" min="0" name="voters_1700" value="{{ item.voters_1700 }}" form="adminTurnoutForm{{ item.id }}"
+                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
                         {% if item.pct_1700 is not none %}<span class="badge bg-warning text-dark">{{ item.pct_1700 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td>
-                        <div class="fw-bold">{{ item.voters_1900 }}</div>
+                        <input type="number" min="0" name="voters_1900" value="{{ item.voters_1900 }}" form="adminTurnoutForm{{ item.id }}"
+                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
                         {% if item.pct_1900 is not none %}<span class="badge bg-success">{{ item.pct_1900 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
-                    <td class="small text-muted">{{ item.updated_at or '-' }}</td>
+                    <td class="small">
+                        <div class="text-muted mb-1">{{ item.updated_at or '-' }}</div>
+                        <button type="submit" form="adminTurnoutForm{{ item.id }}" class="btn btn-sm btn-dark fw-bold">حفظ</button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -1427,16 +1433,7 @@ def update_turnout(turnout_id):
     v1700 = parse_non_neg_int("voters_1700", row["voters_1700"] or 0)
     v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
 
-    if not (v0930 <= v1400 <= v1700 <= v1900):
-        conn.close()
-        flash(f"تنبيه للمكتب ({row['office_name']}): يجب أن يكون عدد المصوتين تصاعدياً أو مساوياً عبر الفترات (09:30 ثم 14:00 ثم 17:00 ثم 19:00).", "warning")
-        return redirect(url_for("center_dashboard", view="turnout"))
-
-    reg = row["registered_voters"] or 0
-    if reg > 0 and v1900 > reg:
-        conn.close()
-        flash(f"تنبيه للمكتب ({row['office_name']}): عدد المصوتين يتجاوز العدد المسجل في المكتب ({reg}). يرجى مراجعة الرقم.", "warning")
-        return redirect(url_for("center_dashboard", view="turnout"))
+    # السماح بإدخال وتعديل أي فترة (09:30، 14:00، 17:00، 19:00) في أي وقت دون قيود تسلسل أو حجز
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute("""
@@ -1671,6 +1668,47 @@ def update_registered_voters(turnout_id):
     return redirect(url_for("admin_dashboard", tab="turnout", center_id=request.form.get("current_center_filter", "all")))
 
 
+@app.route("/admin/update_turnout/<int:turnout_id>", methods=["POST"])
+def admin_update_turnout(turnout_id):
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    ensure_turnout_schema(conn)
+    row = conn.execute("SELECT * FROM office_turnout WHERE id = ?", (turnout_id,)).fetchone()
+    if not row:
+        conn.close()
+        return redirect(url_for("admin_dashboard", tab="turnout"))
+
+    def parse_non_neg_int(field_name, fallback):
+        raw_val = request.form.get(field_name, "").strip()
+        if raw_val == "":
+            return fallback
+        try:
+            val = int(raw_val)
+            return val if val >= 0 else fallback
+        except ValueError:
+            return fallback
+
+    reg_val = parse_non_neg_int("registered_voters", row["registered_voters"] or 0)
+    v0930 = parse_non_neg_int("voters_0930", row["voters_0930"] or 0)
+    v1400 = parse_non_neg_int("voters_1400", row["voters_1400"] or 0)
+    v1700 = parse_non_neg_int("voters_1700", row["voters_1700"] or 0)
+    v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn.execute("""
+        UPDATE office_turnout
+        SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?, updated_at = ?
+        WHERE id = ?
+    """, (reg_val, v0930, v1400, v1700, v1900, now_str, turnout_id))
+    conn.commit()
+    conn.close()
+
+    flash(f"تم حفظ وتحديث بيانات المكتب ({row['office_name']} - {row['center_name']}) بنجاح.", "success")
+    return redirect(url_for("admin_dashboard", tab="turnout", center_id=request.form.get("current_center_filter", "all")))
+
+
 @app.route("/admin/reset_all", methods=["POST"])
 def reset_all_data():
     if session.get("role") != "admin":
@@ -1740,10 +1778,14 @@ def export_absences_csv():
             r["birth_date"], r["absence_reason"], r["replacement_name"], r["updated_at"]
         ])
 
+    from urllib.parse import quote
+    ar_name = "تقرير_الغيابات_الخيثر_28_نوفمبر_2026.csv"
     return Response(
         output.getvalue(),
         mimetype="text/csv; charset=utf-8",
-        headers={"Content-Disposition": "attachment; filename=تقرير_الغيابات_الخيثر_28_نوفمبر_2026.csv"},
+        headers={
+            "Content-Disposition": f"attachment; filename=absences_kheiter_2026.csv; filename*=UTF-8''{quote(ar_name)}"
+        },
     )
 
 
@@ -1793,10 +1835,14 @@ def export_turnout_csv():
             r["updated_at"] or "-"
         ])
 
+    from urllib.parse import quote
+    ar_name = "تقرير_نسب_المشاركة_الخيثر_28_نوفمبر_2026.csv"
     return Response(
         output.getvalue(),
         mimetype="text/csv; charset=utf-8",
-        headers={"Content-Disposition": "attachment; filename=تقرير_نسب_المشاركة_الخيثر_28_نوفمبر_2026.csv"},
+        headers={
+            "Content-Disposition": f"attachment; filename=turnout_kheiter_2026.csv; filename*=UTF-8''{quote(ar_name)}"
+        },
     )
 
 
