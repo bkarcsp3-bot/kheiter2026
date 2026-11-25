@@ -24,38 +24,106 @@ os.makedirs(DB_DIR, exist_ok=True)
 
 DB_PATH = os.path.join(DB_DIR, "election_attendance.db")
 
-AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="شعار السلطة الانتخابية">
+AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 380" width="400" height="380" role="img" aria-label="شعار السلطة الوطنية المستقلة للانتخابات">
   <defs>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e5be63"/>
-      <stop offset="50%" stop-color="#c6973f"/>
-      <stop offset="100%" stop-color="#9e7222"/>
+    <linearGradient id="silverBevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="45%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
     </linearGradient>
-    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#17385c"/>
-      <stop offset="100%" stop-color="#0b1f36"/>
+    <linearGradient id="greenBand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00843d"/>
+      <stop offset="55%" stop-color="#006b31"/>
+      <stop offset="100%" stop-color="#004d23"/>
     </linearGradient>
+    <linearGradient id="flagGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00843d"/>
+      <stop offset="100%" stop-color="#005a28"/>
+    </linearGradient>
+    <linearGradient id="flagWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <path id="arArc" d="M 55,215 A 145,145 0 1,1 345,215" fill="none"/>
   </defs>
-  <!-- درع مؤسساتي فاخر -->
-  <path d="M60 8 L104 24 V58 C104 86 85 104 60 113 C35 104 16 86 16 58 V24 Z" fill="url(#navyGrad)" stroke="url(#goldGrad)" stroke-width="4"/>
-  <!-- إطار داخلي ذهبي -->
-  <path d="M60 15 L97 29 V57 C97 80 81 96 60 105 C39 96 23 80 23 57 V29 Z" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" opacity="0.85"/>
-  <!-- نجمة وهلال رمزي في الأعلى -->
-  <circle cx="60" cy="34" r="10" fill="url(#goldGrad)" opacity="0.22"/>
-  <polygon points="60,25 62.6,31 69,31.5 64,35.6 65.6,42 60,38.4 54.4,42 56,35.6 51,31.5 57.4,31" fill="url(#goldGrad)"/>
-  <!-- صندوق الاقتراع -->
-  <rect x="38" y="54" width="44" height="28" rx="4" fill="#f8fafc" stroke="url(#goldGrad)" stroke-width="2.2"/>
-  <!-- فتحة الاقتراع -->
-  <rect x="46" y="59" width="28" height="3.5" rx="1.75" fill="#17385c"/>
-  <!-- ورقة الاقتراع الداخلة إلى الصندوق -->
-  <path d="M51 45 H69 V60.5 H51 Z" fill="#ffffff" stroke="#17385c" stroke-width="1.6"/>
-  <line x1="55" y1="50" x2="65" y2="50" stroke="#c6973f" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="55" y1="54" x2="63" y2="54" stroke="#17385c" stroke-width="1.4" stroke-linecap="round"/>
-  <!-- علامة صح/اعتماد أسفل الصندوق -->
-  <circle cx="60" cy="72" r="5.5" fill="url(#goldGrad)"/>
-  <polyline points="57.3,72.2 59.2,74.2 63,70.2" fill="none" stroke="#0b1f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- شريط سفلي رمزي -->
-  <path d="M36 91 Q60 98 84 91" fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- الإطار الفضي الخارجي الدائري المتصل بالراية -->
+  <path d="M 332,272 C 354,242 367,205 367,165 C 367,74 292,0 200,0 C 108,0 33,74 33,165 C 33,205 47,242 71,271 L 80,264 C 58,236 45,202 45,165 C 45,80 114,12 200,12 C 286,12 355,80 355,165 C 355,202 343,236 322,264 Z" fill="url(#silverBevel)" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- الخلفية البيضاء الداخلية -->
+  <circle cx="200" cy="165" r="154" fill="#ffffff"/>
+
+  <!-- الشريط الأخضر العلوي العريض للنص العربي -->
+  <path d="M 46,165 A 154,154 0 0,1 354,165 L 304,165 A 104,104 0 0,0 96,165 Z" fill="url(#greenBand)"/>
+  <!-- حد معدني فاصل أسفل الشريط الأخضر -->
+  <path d="M 96,165 A 104,104 0 0,1 304,165" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
+
+  <!-- النص العربي على القوس -->
+  <text fill="#ffffff" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="22.5" font-weight="800" letter-spacing="0.5">
+    <textPath href="#arArc" startOffset="50%" text-anchor="middle" dominant-baseline="central">
+      السلطة الوطنية المستقلة للانتخابات
+    </textPath>
+  </text>
+
+  <!-- رموز تيفيناغ موزعة حول القوس الداخلي -->
+  <g fill="#111827" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- يسار سفلي -->
+    <circle cx="101" cy="216" r="2.2"/>
+    <path d="M 108,214 L 118,223 M 118,214 L 108,223" fill="none"/>
+    <circle cx="125" cy="227" r="2.2"/>
+    <!-- يسار علوي -->
+    <path d="M 118,162 L 130,162 M 124,153 L 124,162" fill="none"/>
+    <circle cx="131" cy="153" r="2"/>
+    <path d="M 136,144 L 146,136 L 146,148" fill="none"/>
+    <circle cx="152" cy="133" r="2"/>
+    <!-- أعلى -->
+    <rect x="164" y="114" width="11" height="11" fill="none"/>
+    <circle cx="182" cy="115" r="2"/>
+    <path d="M 190,109 L 204,119 M 204,109 L 190,119 M 197,107 L 197,121" fill="none"/>
+    <circle cx="212" cy="115" r="2"/>
+    <circle cx="226" cy="117" r="4.5" fill="none"/>
+    <circle cx="226" cy="117" r="1.4"/>
+    <!-- يمين علوي -->
+    <path d="M 241,121 L 253,131 M 253,121 L 241,131" fill="none"/>
+    <line x1="264" y1="133" x2="264" y2="147"/>
+    <circle cx="273" cy="147" r="2"/>
+    <path d="M 277,154 L 289,166 M 289,154 L 277,166" fill="none"/>
+    <circle cx="283" cy="175" r="4.5" fill="none"/>
+    <circle cx="283" cy="175" r="1.4"/>
+    <line x1="286" y1="186" x2="286" y2="201"/>
+    <path d="M 294,187 L 288,194 L 294,201" fill="none"/>
+    <path d="M 295,207 L 283,217 L 295,223 Z" fill="none"/>
+  </g>
+
+  <!-- رمز الظرف وصندوق الاقتراع في المنتصف -->
+  <g transform="translate(177, 134)">
+    <polygon points="23,2 45,14 23,26 1,14" fill="#007a37" stroke="#005a28" stroke-width="1.2"/>
+    <polyline points="6,17 23,26 40,17" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+    <line x1="-6" y1="32" x2="52" y2="32" stroke="#007a37" stroke-width="2.6" stroke-linecap="round"/>
+  </g>
+
+  <!-- النص الإنجليزي في المنتصف -->
+  <text x="200" y="196" text-anchor="middle" fill="#1e293b" font-family="Segoe UI, Arial, sans-serif" font-size="22.5" font-weight="500">
+    Independent National
+  </text>
+  <text x="200" y="223" text-anchor="middle" fill="#1e293b" font-family="Segoe UI, Arial, sans-serif" font-size="22.5" font-weight="500">
+    Authority of Elections
+  </text>
+
+  <!-- العلم الجزائري المتموج في الأسفل -->
+  <g>
+    <!-- النصف الأخضر للعلم -->
+    <path d="M 52,256 C 95,292 148,295 190,274 L 190,342 C 148,362 95,358 52,320 Z" fill="url(#flagGreen)"/>
+    <!-- النصف الأبيض للعلم -->
+    <path d="M 190,274 C 235,252 288,255 342,272 C 324,296 318,322 336,346 C 284,328 235,320 190,342 Z" fill="url(#flagWhite)" stroke="#94a3b8" stroke-width="1"/>
+    <!-- الشريط المعدني الملتف على اليمين -->
+    <path d="M 332,272 C 314,296 310,322 328,346 L 342,348 C 324,324 328,298 346,274 Z" fill="url(#silverBevel)"/>
+    <!-- الهلال الأحمر -->
+    <path d="M 206,282 A 22,22 0 1,0 206,322 A 17.5,17.5 0 1,1 206,282 Z" fill="#d21034"/>
+    <!-- النجمة الحمراء -->
+    <polygon points="212,293 214.4,299.5 221.3,299.8 215.9,304 217.8,310.7 212,306.8 206.2,310.7 208.1,304 202.7,299.8 209.6,299.5" fill="#d21034"/>
+  </g>
 </svg>"""
 
 SQL_INIT_SCRIPT = """-- قاعدة بيانات مؤطري مراكز ومكاتب التصويت - بلدية الخيثر (ولاية البيض)
@@ -436,15 +504,16 @@ TEMPLATES = {
             padding-bottom: 0.65rem;
         }
         .brand-logo-wrap {
-            width: 50px;
-            height: 50px;
+            width: 56px;
+            height: 54px;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(197, 150, 58, 0.45);
+            background: #ffffff;
+            border: 2px solid var(--gov-gold);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 3px;
+            padding: 2px;
+            overflow: hidden;
             flex-shrink: 0;
         }
         .brand-logo-wrap img {
@@ -541,7 +610,7 @@ TEMPLATES = {
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-3 m-0" href="{{ url_for('login') }}">
             <div class="brand-logo-wrap">
-                <img src="{{ url_for('authority_logo') }}" alt="شعار السلطة">
+                <img src="{{ url_for('authority_logo') }}" alt="شعار السلطة الوطنية المستقلة للانتخابات" width="112" height="106" class="mb-2" style="object-fit:contain;">
             </div>
             <div>
                 <div class="brand-title">السلطة الوطنية المستقلة للانتخابات — بلدية الخيثر</div>
@@ -875,6 +944,9 @@ TEMPLATES = {
         <a href="{{ url_for('admin_dashboard', tab=active_tab, center_id=center_filter) }}" class="btn btn-outline-secondary btn-sm fw-bold">تحديث ↻</a>
         <a href="{{ url_for('export_absences_csv') }}" class="btn btn-success btn-sm fw-bold">تحميل تقرير الغيابات</a>
         <a href="{{ url_for('export_turnout_csv') }}" class="btn btn-gov-primary btn-sm">تحميل تقرير نسب المشاركة</a>
+        <button type="button" class="btn btn-gov-gold btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#importCsvModal">
+            استرجاع البيانات من CSV
+        </button>
         <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#resetDataModal">
             تصفير البيانات (إعادة من الصفر)
         </button>
@@ -1148,6 +1220,40 @@ TEMPLATES = {
     </div>
 </div>
 {% endif %}
+
+<div class="modal fade" id="importCsvModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('import_csv_data') }}" enctype="multipart/form-data">
+                <div class="modal-header text-white" style="background-color:#0f2942;">
+                    <h5 class="modal-title fw-bold">استرجاع البيانات من ملف CSV</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        <strong>ملاحظة:</strong> يمكنك رفع ملف <strong>تقرير نسب المشاركة</strong> (لإرجاع الأرقام المحجوزة وأعداد المصوتين للفترات الأربع) أو ملف <strong>تقرير الغيابات</strong> (لإرجاع الغائبين وأسباب الغياب والمستخلفين) المحمّل مسبقاً من النظام.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">نوع التقرير المراد استرجاعه:</label>
+                        <select name="import_type" class="form-select" required>
+                            <option value="auto" selected>تعرّف تلقائي على نوع الملف (نسب المشاركة أو الغيابات)</option>
+                            <option value="turnout">تقرير نسب المشاركة والأرقام المحجوزة</option>
+                            <option value="absences">تقرير الغيابات والمستخلفين</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">اختر ملف CSV:</label>
+                        <input type="file" name="csv_file" accept=".csv,text/csv" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-gov-primary fw-bold">رفع واسترجاع البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="resetDataModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -1858,6 +1964,135 @@ def export_turnout_csv():
             "Content-Disposition": f"attachment; filename=turnout_kheiter_2026.csv; filename*=UTF-8''{quote(ar_name)}"
         },
     )
+
+
+
+
+@app.route("/import_csv", methods=["POST"])
+def import_csv_data():
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+
+    uploaded_file = request.files.get("csv_file")
+    if not uploaded_file or not uploaded_file.filename:
+        flash("يرجى اختيار ملف CSV صالح للاسترجاع.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        raw_bytes = uploaded_file.read()
+        try:
+            text_data = raw_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text_data = raw_bytes.decode("cp1256", errors="replace")
+
+        sample = text_data[:2048]
+        delimiter = ";" if sample.count(";") > sample.count(",") else ","
+        reader = csv.DictReader(io.StringIO(text_data), delimiter=delimiter)
+        fieldnames = [f.strip() for f in (reader.fieldnames or []) if f]
+
+        if not fieldnames:
+            flash("الملف فارغ أو لا يحتوي على ترويسة أعمدة صالحة.", "danger")
+            return redirect(url_for("admin_dashboard"))
+
+        import_type = request.form.get("import_type", "auto")
+        if import_type == "auto":
+            if any("المصوتون" in col or "العدد المسجل" in col for col in fieldnames):
+                import_type = "turnout"
+            elif any("سبب الغياب" in col or "المستخلف" in col or "نوع القائمة" in col for col in fieldnames):
+                import_type = "absences"
+            else:
+                flash("تعذر التعرف تلقائياً على نوع التقرير. يرجى اختيار النوع يدوياً والتأكد أنه ملف CSV مصدّر من النظام.", "warning")
+                return redirect(url_for("admin_dashboard"))
+
+        def to_int(val):
+            if val is None:
+                return 0
+            cleaned = str(val).strip().replace(",", "")
+            if cleaned == "" or cleaned == "-":
+                return 0
+            try:
+                v = int(float(cleaned))
+                return v if v >= 0 else 0
+            except ValueError:
+                return 0
+
+        conn = get_db()
+        ensure_turnout_schema(conn)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        if import_type == "turnout":
+            updated_count = 0
+            for row in reader:
+                row_clean = {k.strip(): (v.strip() if isinstance(v, str) else v) for k, v in row.items() if k}
+                center_name = row_clean.get("المركز", "")
+                office_name = row_clean.get("المكتب", "")
+                if not center_name or not office_name:
+                    continue
+
+                reg_val = to_int(row_clean.get("العدد المسجل (الرقم المحجوز)", row_clean.get("العدد المسجل", 0)))
+                v0930 = to_int(row_clean.get("المصوتون 09:30", 0))
+                v1400 = to_int(row_clean.get("المصوتون 14:00", 0))
+                v1700 = to_int(row_clean.get("المصوتون 17:00", 0))
+                v1900 = to_int(row_clean.get("المصوتون 19:00", 0))
+                upd_at = row_clean.get("آخر تحديث", "") or now_str
+                if upd_at == "-":
+                    upd_at = now_str
+
+                cur = conn.execute("""
+                    UPDATE office_turnout
+                    SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?, updated_at = ?
+                    WHERE center_name = ? AND office_name = ?
+                """, (reg_val, v0930, v1400, v1700, v1900, upd_at, center_name, office_name))
+                if cur.rowcount > 0:
+                    updated_count += cur.rowcount
+
+            conn.commit()
+            conn.close()
+            flash(f"تم استرجاع بيانات نسب المشاركة والأرقام المحجوزة لـ ({updated_count}) مكتب بنجاح.", "success")
+            return redirect(url_for("admin_dashboard", tab="turnout"))
+
+        else:
+            restored_absences = 0
+            for row in reader:
+                row_clean = {k.strip(): (v.strip() if isinstance(v, str) else v) for k, v in row.items() if k}
+                center_name = row_clean.get("المركز", "")
+                office_name = row_clean.get("المكتب", "")
+                last_name = row_clean.get("اللقب", "")
+                first_name = row_clean.get("الاسم", "")
+                list_type = row_clean.get("نوع القائمة", "")
+                role_title = row_clean.get("المهمة", "")
+                reason = row_clean.get("سبب الغياب", "")
+                replacement = row_clean.get("المستخلف (البديل)", row_clean.get("المستخلف", ""))
+                upd_at = row_clean.get("وقت التسجيل", "") or now_str
+
+                if not center_name or not last_name or not first_name:
+                    continue
+
+                if office_name and list_type and role_title:
+                    cur = conn.execute("""
+                        UPDATE election_staff
+                        SET status = 'غائب', absence_reason = ?, replacement_name = ?, updated_at = ?
+                        WHERE center_name = ? AND office_name = ? AND list_type = ? AND role_title = ?
+                          AND last_name_ar = ? AND first_name_ar = ?
+                    """, (reason, replacement, upd_at, center_name, office_name, list_type, role_title, last_name, first_name))
+                else:
+                    cur = conn.execute("""
+                        UPDATE election_staff
+                        SET status = 'غائب', absence_reason = ?, replacement_name = ?, updated_at = ?
+                        WHERE center_name = ? AND last_name_ar = ? AND first_name_ar = ?
+                    """, (reason, replacement, upd_at, center_name, last_name, first_name))
+
+                if cur.rowcount > 0:
+                    restored_absences += cur.rowcount
+
+            conn.commit()
+            conn.close()
+            flash(f"تم استرجاع بيانات الغيابات لـ ({restored_absences}) مؤطر بنجاح.", "success")
+            return redirect(url_for("admin_dashboard", tab="absences"))
+
+    except Exception as exc:
+        flash(f"حدث خطأ أثناء قراءة ملف CSV: {exc}", "danger")
+        return redirect(url_for("admin_dashboard"))
 
 
 if __name__ == "__main__":
