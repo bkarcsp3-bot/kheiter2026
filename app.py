@@ -663,7 +663,7 @@ TEMPLATES = {
 
 <footer class="footer-gov text-center">
     <div class="container">
-        <span>نظام المتابعة الانتخابية الرقمي — بلدية الخيثر • 28 نوفمبر 2026</span>
+        <span>نظام المتابعة الانتخابية الرقمي  من اعداد محمدي بكار— بلدية الخيثر • 28 نوفمبر 2026</span>
     </div>
 </footer>
 
