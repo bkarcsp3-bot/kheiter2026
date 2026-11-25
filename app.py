@@ -566,6 +566,19 @@ TEMPLATES = {
         .row-absent {
             background-color: #fff5f5 !important;
         }
+        .cell-filled-green {
+            background-color: #dcfce7 !important;
+            transition: background-color 0.2s ease;
+        }
+        .input-filled-green {
+            background-color: #16a34a !important;
+            color: #ffffff !important;
+            border-color: #15803d !important;
+            font-weight: 800 !important;
+        }
+        .cell-unfilled {
+            background-color: #ffffff;
+        }
         .btn-gov-primary {
             background: linear-gradient(135deg, var(--gov-navy) 0%, #19426b 100%);
             color: #fff;
@@ -1153,7 +1166,13 @@ TEMPLATES = {
 
 <div class="card p-3">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h5 class="fw-bold mb-0" style="color:#0f2942;">تفاصيل المصوتين والنسب حسب كل مكتب</h5>
+        <div>
+            <h5 class="fw-bold mb-1" style="color:#0f2942;">تفاصيل المصوتين والنسب حسب كل مكتب</h5>
+            <div class="d-flex align-items-center gap-3 small">
+                <span><span class="badge" style="background-color:#16a34a;">&nbsp;&nbsp;</span> خانة خضراء: تم ملؤها من طرف رئيس المركز</span>
+                <span><span class="badge bg-light text-dark border">&nbsp;&nbsp;</span> خانة بيضاء: لم تُملأ بعد</span>
+            </div>
+        </div>
         <form method="GET" class="d-flex gap-2 align-items-center">
             <input type="hidden" name="tab" value="turnout">
             <select name="center_id" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -1181,9 +1200,15 @@ TEMPLATES = {
             </thead>
             <tbody>
                 {% for item in turnout_offices %}
+                {% set all_periods_filled = item.filled_0930 and item.filled_1400 and item.filled_1700 and item.filled_1900 %}
                 <tr>
-                    <td class="text-end fw-bold">{{ item.center_name }}</td>
-                    <td class="text-end fw-bold">{{ item.office_name }}</td>
+                    <td class="text-end fw-bold {% if all_periods_filled %}cell-filled-green{% endif %}">{{ item.center_name }}</td>
+                    <td class="text-end fw-bold {% if all_periods_filled %}cell-filled-green{% endif %}">
+                        {{ item.office_name }}
+                        {% if all_periods_filled %}
+                        <span class="badge bg-success ms-1">مكتمل ✓</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <form id="adminTurnoutForm{{ item.id }}" method="POST" action="{{ url_for('admin_update_turnout', turnout_id=item.id) }}" class="d-flex justify-content-center gap-1">
                             <input type="hidden" name="current_center_filter" value="{{ center_filter }}">
@@ -1191,24 +1216,24 @@ TEMPLATES = {
                                    class="form-control form-control-sm text-center" style="width:85px;">
                         </form>
                     </td>
-                    <td>
+                    <td class="{% if item.filled_0930 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_0930" value="{{ item.voters_0930 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_0930 %}input-filled-green{% endif %}" style="width:85px;">
                         {% if item.pct_0930 is not none %}<span class="badge bg-primary">{{ item.pct_0930 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
-                    <td>
+                    <td class="{% if item.filled_1400 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1400" value="{{ item.voters_1400 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1400 %}input-filled-green{% endif %}" style="width:85px;">
                         {% if item.pct_1400 is not none %}<span class="badge bg-info text-dark">{{ item.pct_1400 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
-                    <td>
+                    <td class="{% if item.filled_1700 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1700" value="{{ item.voters_1700 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1700 %}input-filled-green{% endif %}" style="width:85px;">
                         {% if item.pct_1700 is not none %}<span class="badge bg-warning text-dark">{{ item.pct_1700 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
-                    <td>
+                    <td class="{% if item.filled_1900 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1900" value="{{ item.voters_1900 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1" style="width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1900 %}input-filled-green{% endif %}" style="width:85px;">
                         {% if item.pct_1900 is not none %}<span class="badge bg-success">{{ item.pct_1900 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="small">
@@ -1325,6 +1350,10 @@ def ensure_turnout_schema(conn):
             voters_1400 INTEGER NOT NULL DEFAULT 0,
             voters_1700 INTEGER NOT NULL DEFAULT 0,
             voters_1900 INTEGER NOT NULL DEFAULT 0,
+            filled_0930 INTEGER NOT NULL DEFAULT 0,
+            filled_1400 INTEGER NOT NULL DEFAULT 0,
+            filled_1700 INTEGER NOT NULL DEFAULT 0,
+            filled_1900 INTEGER NOT NULL DEFAULT 0,
             updated_at TEXT DEFAULT '',
             UNIQUE(center_id, office_name),
             FOREIGN KEY (center_id) REFERENCES centers(center_id)
@@ -1336,6 +1365,10 @@ def ensure_turnout_schema(conn):
         WHERE office_name != 'مركز التصويت'
         ORDER BY center_id, id
     """).fetchall()
+    t_cols = [c["name"] for c in conn.execute("PRAGMA table_info(office_turnout)").fetchall()]
+    for col_name in ("filled_0930", "filled_1400", "filled_1700", "filled_1900"):
+        if col_name not in t_cols:
+            conn.execute(f"ALTER TABLE office_turnout ADD COLUMN {col_name} INTEGER NOT NULL DEFAULT 0")
     for off in offices:
         conn.execute("""
             INSERT OR IGNORE INTO office_turnout (center_id, center_name, office_name)
@@ -1557,12 +1590,19 @@ def update_turnout(turnout_id):
 
     # السماح بإدخال وتعديل أي فترة (09:30، 14:00، 17:00، 19:00) في أي وقت دون قيود تسلسل أو حجز
 
+    f0930 = 1 if v0930 > 0 else 0
+    f1400 = 1 if v1400 > 0 else 0
+    f1700 = 1 if v1700 > 0 else 0
+    f1900 = 1 if v1900 > 0 else 0
+
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute("""
         UPDATE office_turnout
-        SET voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?, updated_at = ?
+        SET voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
+            filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?,
+            updated_at = ?
         WHERE id = ?
-    """, (v0930, v1400, v1700, v1900, now_str, turnout_id))
+    """, (v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, turnout_id))
     conn.commit()
     conn.close()
 
@@ -1700,12 +1740,16 @@ def admin_dashboard():
             "office_name": r["office_name"],
             "registered_voters": reg,
             "voters_0930": v0930,
+            "filled_0930": (r["filled_0930"] if "filled_0930" in r.keys() else 0) or (1 if v0930 > 0 else 0),
             "pct_0930": calc_pct(v0930, reg),
             "voters_1400": v1400,
+            "filled_1400": (r["filled_1400"] if "filled_1400" in r.keys() else 0) or (1 if v1400 > 0 else 0),
             "pct_1400": calc_pct(v1400, reg),
             "voters_1700": v1700,
+            "filled_1700": (r["filled_1700"] if "filled_1700" in r.keys() else 0) or (1 if v1700 > 0 else 0),
             "pct_1700": calc_pct(v1700, reg),
             "voters_1900": v1900,
+            "filled_1900": (r["filled_1900"] if "filled_1900" in r.keys() else 0) or (1 if v1900 > 0 else 0),
             "pct_1900": calc_pct(v1900, reg),
             "updated_at": r["updated_at"],
         })
@@ -1819,11 +1863,16 @@ def admin_update_turnout(turnout_id):
     v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    f0930 = 1 if v0930 > 0 else 0
+    f1400 = 1 if v1400 > 0 else 0
+    f1700 = 1 if v1700 > 0 else 0
+    f1900 = 1 if v1900 > 0 else 0
     conn.execute("""
         UPDATE office_turnout
-        SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?, updated_at = ?
+        SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
+            filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?, updated_at = ?
         WHERE id = ?
-    """, (reg_val, v0930, v1400, v1700, v1900, now_str, turnout_id))
+    """, (reg_val, v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, turnout_id))
     conn.commit()
     conn.close()
 
@@ -1862,6 +1911,10 @@ def reset_all_data():
                 voters_1400 = 0,
                 voters_1700 = 0,
                 voters_1900 = 0,
+                filled_0930 = 0,
+                filled_1400 = 0,
+                filled_1700 = 0,
+                filled_1900 = 0,
                 updated_at = ''
         """)
     conn.commit()
@@ -2042,9 +2095,12 @@ def import_csv_data():
 
                 cur = conn.execute("""
                     UPDATE office_turnout
-                    SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?, updated_at = ?
+                    SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
+                        filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?, updated_at = ?
                     WHERE center_name = ? AND office_name = ?
-                """, (reg_val, v0930, v1400, v1700, v1900, upd_at, center_name, office_name))
+                """, (reg_val, v0930, v1400, v1700, v1900,
+                      1 if v0930 > 0 else 0, 1 if v1400 > 0 else 0, 1 if v1700 > 0 else 0, 1 if v1900 > 0 else 0,
+                      upd_at, center_name, office_name))
                 if cur.rowcount > 0:
                     updated_count += cur.rowcount
 
