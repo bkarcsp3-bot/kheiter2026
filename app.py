@@ -2,6 +2,7 @@ import csv
 import io
 import os
 import sqlite3
+import uuid
 from datetime import datetime
 from urllib.parse import quote
 from flask import (
@@ -893,25 +894,25 @@ TEMPLATES = {
 <div class="row g-2 g-md-3 mb-4">
     <div class="col-6 col-md-3">
         <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">مجموع المصوتين (09:30)</span>
+            <span class="text-muted small fw-bold">مجموع المصوتين (11:00)</span>
             <h3 class="fw-bold mb-0 mt-1 text-primary">{{ center_turnout_totals.voters_0930 }}</h3>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="card stat-card p-3 text-center" style="border-top-color:#0284c7;">
-            <span class="text-muted small fw-bold">مجموع المصوتين (14:00)</span>
+            <span class="text-muted small fw-bold">مجموع المصوتين (13:30)</span>
             <h3 class="fw-bold mb-0 mt-1 text-info">{{ center_turnout_totals.voters_1400 }}</h3>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">مجموع المصوتين (17:00)</span>
+            <span class="text-muted small fw-bold">مجموع المصوتين (15:30)</span>
             <h3 class="fw-bold mb-0 mt-1 text-warning">{{ center_turnout_totals.voters_1700 }}</h3>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="card stat-card p-3 text-center" style="border-top-color:#15803d;">
-            <span class="text-muted small fw-bold">مجموع المصوتين (19:00)</span>
+            <span class="text-muted small fw-bold">مجموع المصوتين (اختتام)</span>
             <h3 class="fw-bold mb-0 mt-1 text-success">{{ center_turnout_totals.voters_1900 }}</h3>
         </div>
     </div>
@@ -919,7 +920,7 @@ TEMPLATES = {
 
 <div class="card p-3">
     <div class="alert alert-warning-soft small mb-3">
-        <strong>إرشاد التسجيل:</strong> يُدخل عدد المصوتين لكل مكتب في المواقيت الأربعة (<strong>09:30</strong>، <strong>14:00</strong>، <strong>17:00</strong>، <strong>19:00</strong>) في أي وقت ودون قيود، ثم يُضغط على زر <strong>حفظ</strong> مقابل المكتب.
+        <strong>إرشاد التسجيل:</strong> يُدخل عدد المصوتين لكل مكتب في الفترات الأربع (<strong>11:00</strong>، <strong>13:30</strong>، <strong>15:30</strong>، <strong>اختتام</strong>) دون أن يتجاوز العدد المسجل في المكتب، ثم يُضغط على زر <strong>حفظ</strong> مقابل المكتب.
     </div>
 
     <div class="table-responsive">
@@ -927,10 +928,10 @@ TEMPLATES = {
             <thead class="table-light">
                 <tr>
                     <th class="text-end">المكتب</th>
-                    <th>المصوتون<br><span class="badge bg-primary">09:30</span></th>
-                    <th>المصوتون<br><span class="badge bg-info text-dark">14:00</span></th>
-                    <th>المصوتون<br><span class="badge bg-warning text-dark">17:00</span></th>
-                    <th>المصوتون<br><span class="badge bg-success">19:00</span></th>
+                    <th>المصوتون<br><span class="badge bg-primary">11:00</span></th>
+                    <th>المصوتون<br><span class="badge bg-info text-dark">13:30</span></th>
+                    <th>المصوتون<br><span class="badge bg-warning text-dark">15:30</span></th>
+                    <th>المصوتون<br><span class="badge bg-success">اختتام</span></th>
                     <th>آخر تحديث</th>
                     <th>حفظ</th>
                 </tr>
@@ -1007,7 +1008,7 @@ TEMPLATES = {
         <a class="nav-link fw-bold text-center {% if active_tab == 'turnout' %}active{% endif %}"
            {% if active_tab == 'turnout' %}style="background-color:#0f2c44;"{% endif %}
            href="{{ url_for('admin_dashboard', tab='turnout', center_id=center_filter) }}">
-            نسب المشاركة (09:30 / 14:00 / 17:00 / 19:00)
+            نسب المشاركة (11:00 / 13:30 / 15:30 / اختتام)
         </a>
     </li>
 </ul>
@@ -1115,10 +1116,10 @@ TEMPLATES = {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="fw-bold small" style="color:#0f2c44;">مؤشر استلام الأرقام من المكاتب ({{ turnout_overall.offices_count }} مكتب):</span>
         <div class="d-flex flex-wrap gap-2 small">
-            <span class="badge bg-primary">09:30 — تم إدخال {{ turnout_overall.reported_0930 }} / {{ turnout_overall.offices_count }}</span>
-            <span class="badge bg-info text-dark">14:00 — تم إدخال {{ turnout_overall.reported_1400 }} / {{ turnout_overall.offices_count }}</span>
-            <span class="badge bg-warning text-dark">17:00 — تم إدخال {{ turnout_overall.reported_1700 }} / {{ turnout_overall.offices_count }}</span>
-            <span class="badge bg-success">19:00 — تم إدخال {{ turnout_overall.reported_1900 }} / {{ turnout_overall.offices_count }}</span>
+            <span class="badge bg-primary">11:00 — تم إدخال {{ turnout_overall.reported_0930 }} / {{ turnout_overall.offices_count }}</span>
+            <span class="badge bg-info text-dark">13:30 — تم إدخال {{ turnout_overall.reported_1400 }} / {{ turnout_overall.offices_count }}</span>
+            <span class="badge bg-warning text-dark">15:30 — تم إدخال {{ turnout_overall.reported_1700 }} / {{ turnout_overall.offices_count }}</span>
+            <span class="badge bg-success">اختتام — تم إدخال {{ turnout_overall.reported_1900 }} / {{ turnout_overall.offices_count }}</span>
         </div>
     </div>
 </div>
@@ -1133,28 +1134,28 @@ TEMPLATES = {
     </div>
     <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">09:30</span>
+            <span class="text-muted small fw-bold">11:00</span>
             <h4 class="fw-bold mb-0 mt-1 text-primary">{{ turnout_overall.voters_0930 }}</h4>
             <small class="fw-bold text-primary">{% if turnout_overall.pct_0930 is not none %}{{ turnout_overall.pct_0930 }}%{% else %}-{% endif %}</small>
         </div>
     </div>
     <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center" style="border-top-color:#0284c7;">
-            <span class="text-muted small fw-bold">14:00</span>
+            <span class="text-muted small fw-bold">13:30</span>
             <h4 class="fw-bold mb-0 mt-1 text-info">{{ turnout_overall.voters_1400 }}</h4>
             <small class="fw-bold text-info">{% if turnout_overall.pct_1400 is not none %}{{ turnout_overall.pct_1400 }}%{% else %}-{% endif %}</small>
         </div>
     </div>
     <div class="col-6 col-md-2">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">17:00</span>
+            <span class="text-muted small fw-bold">15:30</span>
             <h4 class="fw-bold mb-0 mt-1 text-warning">{{ turnout_overall.voters_1700 }}</h4>
             <small class="fw-bold text-warning">{% if turnout_overall.pct_1700 is not none %}{{ turnout_overall.pct_1700 }}%{% else %}-{% endif %}</small>
         </div>
     </div>
     <div class="col-12 col-md-4">
         <div class="card stat-card p-3 text-center" style="border-top-color:#15803d;">
-            <span class="text-muted small fw-bold">19:00 (النهائية)</span>
+            <span class="text-muted small fw-bold">اختتام (النهائية)</span>
             <h4 class="fw-bold mb-0 mt-1 text-success">{{ turnout_overall.voters_1900 }}</h4>
             <small class="fw-bold text-success">{% if turnout_overall.pct_1900 is not none %}نسبة المشاركة: {{ turnout_overall.pct_1900 }}%{% else %}أدخل العدد المسجل لحساب النسبة{% endif %}</small>
         </div>
@@ -1169,10 +1170,10 @@ TEMPLATES = {
                 <tr>
                     <th class="text-end">المركز</th>
                     <th>العدد المسجل (المحجوز)</th>
-                    <th>09:30 (عدد / نسبة)</th>
-                    <th>14:00 (عدد / نسبة)</th>
-                    <th>17:00 (عدد / نسبة)</th>
-                    <th>19:00 (عدد / نسبة)</th>
+                    <th>11:00 (عدد / نسبة)</th>
+                    <th>13:30 (عدد / نسبة)</th>
+                    <th>15:30 (عدد / نسبة)</th>
+                    <th>اختتام (عدد / نسبة)</th>
                 </tr>
             </thead>
             <tbody>
@@ -1218,10 +1219,10 @@ TEMPLATES = {
                     <th class="text-end">المركز</th>
                     <th class="text-end">المكتب</th>
                     <th>العدد المسجل<br><small>(الرقم المحجوز)</small></th>
-                    <th>09:30</th>
-                    <th>14:00</th>
-                    <th>17:00</th>
-                    <th>19:00</th>
+                    <th>11:00</th>
+                    <th>13:30</th>
+                    <th>15:30</th>
+                    <th>اختتام</th>
                     <th>آخر تحديث</th>
                 </tr>
             </thead>
@@ -1372,7 +1373,7 @@ TEMPLATES = {
                                         {{ uinfo.title }}<br>
                                         <small class="text-muted">({{ uname }})</small>
                                     </td>
-                                    <td><span class="badge bg-secondary fs-6">{{ uinfo.password }}</span></td>
+                                    <td><span class="badge bg-secondary fs-6">{{ uinfo.password_display }}</span></td>
                                     <td>
                                         <input type="text" name="pw_{{ uname }}" class="form-control form-control-sm text-center"
                                                placeholder="كلمة سر جديدة..." autocomplete="off">
@@ -1399,10 +1400,10 @@ TEMPLATES = {
 app.jinja_loader = DictLoader(TEMPLATES)
 
 TURNOUT_SLOTS = [
-    ("slot_0930", "الفترة الأولى (09:30)"),
-    ("slot_1400", "الفترة الثانية (14:00)"),
-    ("slot_1700", "الفترة الثالثة (17:00)"),
-    ("slot_1900", "الفترة الأخيرة (19:00)"),
+    ("slot_0930", "الفترة الأولى (11:00)"),
+    ("slot_1400", "الفترة الثانية (13:30)"),
+    ("slot_1700", "الفترة الثالثة (15:30)"),
+    ("slot_1900", "الفترة الأخيرة (اختتام)"),
 ]
 
 MUNICIPAL_TOTAL_REGISTERED = 8581
@@ -1480,13 +1481,17 @@ def ensure_turnout_schema(conn):
         CREATE TABLE IF NOT EXISTS user_passwords (
             username TEXT PRIMARY KEY,
             password TEXT NOT NULL,
-            updated_at TEXT DEFAULT ''
+            updated_at TEXT DEFAULT '',
+            session_version TEXT NOT NULL DEFAULT 'v1'
         );
     """)
+    up_cols = [c["name"] for c in conn.execute("PRAGMA table_info(user_passwords)").fetchall()]
+    if "session_version" not in up_cols:
+        conn.execute("ALTER TABLE user_passwords ADD COLUMN session_version TEXT NOT NULL DEFAULT 'v1'")
     for uname, uinfo in USERS.items():
         conn.execute("""
-            INSERT OR IGNORE INTO user_passwords (username, password, updated_at)
-            VALUES (?, ?, '')
+            INSERT OR IGNORE INTO user_passwords (username, password, updated_at, session_version)
+            VALUES (?, ?, '', 'v1')
         """, (uname, uinfo["password"]))
     conn.commit()
 
@@ -1497,8 +1502,8 @@ def get_effective_users(conn=None):
         conn = get_db()
         close_after = True
     ensure_turnout_schema(conn)
-    db_rows = conn.execute("SELECT username, password, updated_at FROM user_passwords").fetchall()
-    pw_map = {r["username"]: (r["password"], r["updated_at"]) for r in db_rows}
+    db_rows = conn.execute("SELECT username, password, updated_at, session_version FROM user_passwords").fetchall()
+    pw_map = {r["username"]: (r["password"], r["updated_at"], r["session_version"] or "v1") for r in db_rows}
     users_out = {}
     for uname, info in USERS.items():
         item = dict(info)
@@ -1506,9 +1511,11 @@ def get_effective_users(conn=None):
             item["password"] = pw_map[uname][0]
             item["password_display"] = _display_password(pw_map[uname][0])
             item["password_updated_at"] = pw_map[uname][1]
+            item["session_version"] = pw_map[uname][2]
         else:
             item["password_display"] = _display_password(item["password"])
             item["password_updated_at"] = ""
+            item["session_version"] = "v1"
         users_out[uname] = item
     if close_after:
         conn.close()
@@ -1581,6 +1588,28 @@ except Exception:
     pass
 
 
+@app.before_request
+def enforce_active_session_version():
+    if request.endpoint in ("authority_logo", "logout", "static"):
+        return None
+    uname = session.get("username")
+    if not uname:
+        return None
+    conn = get_db()
+    ensure_turnout_schema(conn)
+    row = conn.execute(
+        "SELECT session_version FROM user_passwords WHERE username = ?",
+        (uname,),
+    ).fetchone()
+    conn.close()
+    current_version = (row["session_version"] if row and row["session_version"] else "v1")
+    if session.get("session_version") != current_version:
+        session.clear()
+        flash("تم تغيير كلمة السر لهذا الحساب. يرجى تسجيل الدخول مجدداً بكلمة السر الجديدة.", "warning")
+        return redirect(url_for("login"))
+    return None
+
+
 @app.route("/authority_logo.svg")
 def authority_logo():
     return Response(AUTHORITY_LOGO_SVG, mimetype="image/svg+xml")
@@ -1599,6 +1628,7 @@ def login():
             session["role"] = user["role"]
             session["center_id"] = user["center_id"]
             session["title"] = user["title"]
+            session["session_version"] = user.get("session_version", "v1")
             if user["role"] == "admin":
                 return redirect(url_for("admin_dashboard"))
             return redirect(url_for("center_dashboard", view="absences"))
@@ -1739,6 +1769,15 @@ def update_turnout(turnout_id):
     v1400 = parse_non_neg_int("voters_1400", row["voters_1400"] or 0)
     v1700 = parse_non_neg_int("voters_1700", row["voters_1700"] or 0)
     v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
+
+    registered_limit = row["registered_voters"] or 0
+    if registered_limit > 0 and max(v0930, v1400, v1700, v1900) > registered_limit:
+        conn.close()
+        flash(
+            f"خطأ: عدد المصوتين المدخل للمكتب ({row['office_name']}) أكبر من العدد المسجل في المكتب ({registered_limit}). لم يتم الحفظ!",
+            "danger",
+        )
+        return redirect(url_for("center_dashboard", view="turnout"))
 
     f0930 = 1 if v0930 > 0 else 0
     f1400 = 1 if v1400 > 0 else 0
@@ -2147,10 +2186,10 @@ def export_turnout_csv():
     writer = csv.writer(output)
     writer.writerow([
         "المركز", "المكتب", "العدد المسجل (الرقم المحجوز)",
-        "المصوتون 09:30", "النسبة 09:30",
-        "المصوتون 14:00", "النسبة 14:00",
-        "المصوتون 17:00", "النسبة 17:00",
-        "المصوتون 19:00", "النسبة 19:00",
+        "المصوتون 11:00", "النسبة 11:00",
+        "المصوتون 13:30", "النسبة 13:30",
+        "المصوتون 15:30", "النسبة 15:30",
+        "المصوتون اختتام", "النسبة اختتام",
         "آخر تحديث"
     ])
     for r in rows:
@@ -2240,10 +2279,10 @@ def import_csv_data():
                     continue
 
                 reg_val = to_int(row_clean.get("العدد المسجل (الرقم المحجوز)", row_clean.get("العدد المسجل", 0)))
-                v0930 = to_int(row_clean.get("المصوتون 09:30", 0))
-                v1400 = to_int(row_clean.get("المصوتون 14:00", 0))
-                v1700 = to_int(row_clean.get("المصوتون 17:00", 0))
-                v1900 = to_int(row_clean.get("المصوتون 19:00", 0))
+                v0930 = to_int(row_clean.get("المصوتون 11:00", row_clean.get("المصوتون 09:30", 0)))
+                v1400 = to_int(row_clean.get("المصوتون 13:30", row_clean.get("المصوتون 14:00", 0)))
+                v1700 = to_int(row_clean.get("المصوتون 15:30", row_clean.get("المصوتون 17:00", 0)))
+                v1900 = to_int(row_clean.get("المصوتون اختتام", row_clean.get("المصوتون 19:00", 0)))
                 upd_at = row_clean.get("آخر تحديث", "") or now_str
                 if upd_at == "-":
                     upd_at = now_str
@@ -2322,20 +2361,24 @@ def admin_change_passwords():
         new_pw = request.form.get(f"pw_{uname}", "").strip()
         if new_pw:
             hashed_pw = generate_password_hash(new_pw)
+            new_version = uuid.uuid4().hex
             conn.execute("""
-                INSERT INTO user_passwords (username, password, updated_at)
-                VALUES (?, ?, ?)
+                INSERT INTO user_passwords (username, password, updated_at, session_version)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(username) DO UPDATE SET
                     password = excluded.password,
-                    updated_at = excluded.updated_at
-            """, (uname, hashed_pw, now_str))
+                    updated_at = excluded.updated_at,
+                    session_version = excluded.session_version
+            """, (uname, hashed_pw, now_str, new_version))
+            if session.get("username") == uname:
+                session["session_version"] = new_version
             updated_titles.append(uinfo["title"])
 
     conn.commit()
     conn.close()
 
     if updated_titles:
-        flash("تم تحديث كلمات السر وتشفيرها بنجاح للحسابات التالية: " + " — ".join(updated_titles), "success")
+        flash("تم تحديث كلمات السر وتشفيرها بنجاح وإنهاء الجلسات النشطة للحسابات التالية: " + " — ".join(updated_titles), "success")
     else:
         flash("لم يتم إدخال أي كلمة سر جديدة لتحديثها.", "info")
 
@@ -2777,13 +2820,13 @@ def admin_print_turnout_pdf():
 
     cards = [
         {"label": "هيئة الناخبين البلدية", "val": str(MUNICIPAL_TOTAL_REGISTERED), "sub": f"محجوز بالمكاتب: {tot_reg}"},
-        {"label": "المشاركة 09:30", "val": str(tot_0930), "sub": f"{m_pct_0930}%" if m_pct_0930 is not None else "-"},
-        {"label": "المشاركة 14:00", "val": str(tot_1400), "sub": f"{m_pct_1400}%" if m_pct_1400 is not None else "-"},
-        {"label": "المشاركة 17:00", "val": str(tot_1700), "sub": f"{m_pct_1700}%" if m_pct_1700 is not None else "-"},
-        {"label": "المشاركة 19:00", "val": str(tot_1900), "sub": f"{m_pct_1900}%" if m_pct_1900 is not None else "-"},
+        {"label": "المشاركة 11:00", "val": str(tot_0930), "sub": f"{m_pct_0930}%" if m_pct_0930 is not None else "-"},
+        {"label": "المشاركة 13:30", "val": str(tot_1400), "sub": f"{m_pct_1400}%" if m_pct_1400 is not None else "-"},
+        {"label": "المشاركة 15:30", "val": str(tot_1700), "sub": f"{m_pct_1700}%" if m_pct_1700 is not None else "-"},
+        {"label": "المشاركة اختتام", "val": str(tot_1900), "sub": f"{m_pct_1900}%" if m_pct_1900 is not None else "-"},
     ]
 
-    headers = ["المركز", "المكتب", "المسجلون", "09:30", "14:00", "17:00", "19:00", "آخر تحديث"]
+    headers = ["المركز", "المكتب", "المسجلون", "11:00", "13:30", "15:30", "اختتام", "آخر تحديث"]
 
     return _render_admin_pdf_response(
         title="تقرير نسب المشاركة وأعداد المصوتين - بلدية الخيثر",
