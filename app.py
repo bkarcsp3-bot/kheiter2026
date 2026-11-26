@@ -1003,7 +1003,6 @@ setInterval(function() {
 }, 45000);
 </script>
 {% endblock %}
-{% endblock %}
 """,
     "admin_dashboard.html": """{% extends "base.html" %}
 {% block title %}لوحة المندوب البلدي - الغيابات ونسب المشاركة{% endblock %}
