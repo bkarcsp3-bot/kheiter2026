@@ -1779,6 +1779,24 @@ def update_turnout(turnout_id):
         )
         return redirect(url_for("center_dashboard", view="turnout"))
 
+    # Cumulative turnout check: each period must be >= the previous period
+    periods_seq = [
+        ("11:00", v0930),
+        ("13:30", v1400),
+        ("15:30", v1700),
+        ("اختتام", v1900),
+    ]
+    for i in range(1, len(periods_seq)):
+        prev_label, prev_val = periods_seq[i - 1]
+        curr_label, curr_val = periods_seq[i]
+        if curr_val < prev_val:
+            conn.close()
+            flash(
+                f"خطأ: عدد المصوتين في فترة ({curr_label}) ({curr_val}) لا يمكن أن يكون أقل من الفترة السابقة ({prev_label}) ({prev_val}) في المكتب ({row['office_name']}). لم يتم الحفظ!",
+                "danger",
+            )
+            return redirect(url_for("center_dashboard", view="turnout"))
+
     f0930 = 1 if v0930 > 0 else 0
     f1400 = 1 if v1400 > 0 else 0
     f1700 = 1 if v1700 > 0 else 0
