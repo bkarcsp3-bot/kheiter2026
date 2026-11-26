@@ -639,6 +639,7 @@ TEMPLATES = {
             }
         }
     </style>
+    <meta http-equiv="Accept-CH" content="Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-gov mb-4">
@@ -1525,21 +1526,49 @@ def _display_password(stored_password):
 ONLINE_TIMEOUT_SECONDS = 180
 
 
+def _format_android_model_name(raw_model):
+    cleaned = (raw_model or "").strip().strip('"').strip()
+    if not cleaned:
+        return ""
+    low = cleaned.lower()
+    if low in ("k", "phone", "mobile", "android", "android os"):
+        return ""
+    # Clean common OEM prefixes/codes while preserving readable model names
+    cleaned = re.sub(r"^samsung[\s_-]+", "Samsung ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^sm-", "Galaxy ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+
 def detect_device_label(req):
     ua = req.headers.get("User-Agent", "") or ""
-    ch_model = (req.headers.get("Sec-CH-UA-Model", "") or "").strip('"').strip()
+    ch_model = _format_android_model_name(req.headers.get("Sec-CH-UA-Model", "") or "")
+    ch_platform = (req.headers.get("Sec-CH-UA-Platform", "") or "").strip('"').strip()
+
     model = ch_model
     if not model:
         m = re.search(r"Android\s[\d.]+;\s*([^;)]+?)\s*(?:Build/|\))", ua, re.IGNORECASE)
         if m:
-            model = m.group(1).strip()
+            candidate = _format_android_model_name(m.group(1))
+            if candidate:
+                model = candidate
+
+    if not model:
+        # Fallback patterns for Redmi / Xiaomi / POCO / Huawei / Honor / Oppo / Realme / Tecno / Infinix / Samsung
+        m_brand = re.search(
+            r"\b((?:SM-[A-Z0-9]+|Redmi[^;)/]+|POCO[^;)/]+|Mi\s*[^;)/]+|M2[0-9]{2}[A-Z0-9]+|CPH[0-9]{4}|RMX[0-9]{4}|V2[0-9]{3}|IN[0-9]{4}|TECNO[^;)/]+|Infinix[^;)/]+|HONOR[^;)/]+|HUAWEI[^;)/]+))",
+            ua,
+            re.IGNORECASE,
+        )
+        if m_brand:
+            model = _format_android_model_name(m_brand.group(1))
 
     if "iPhone" in ua:
         device = "هاتف iPhone"
     elif "iPad" in ua:
         device = "جهاز iPad"
-    elif "Android" in ua:
-        device = f"هاتف Android ({model})" if model else "هاتف Android"
+    elif "Android" in ua or ch_platform.lower() == "android":
+        device = f"هاتف {model} (Android)" if model else "هاتف Android"
     elif "Windows" in ua:
         device = "حاسوب Windows"
     elif "Macintosh" in ua or "Mac OS" in ua:
@@ -1549,15 +1578,21 @@ def detect_device_label(req):
     else:
         device = "جهاز غير محدد"
 
-    if "Edg/" in ua:
+    if "Edg/" in ua or "EdgA/" in ua:
         browser = "Edge"
-    elif "OPR/" in ua or "Opera" in ua:
+    elif "OPR/" in ua or "Opt/" in ua or "Opera" in ua:
         browser = "Opera"
     elif "SamsungBrowser" in ua:
         browser = "Samsung Internet"
+    elif "YaBrowser" in ua:
+        browser = "Yandex"
+    elif "UCBrowser" in ua:
+        browser = "UC Browser"
+    elif "MiuiBrowser" in ua:
+        browser = "متصفح Xiaomi"
     elif "Chrome/" in ua and "Chromium" not in ua:
         browser = "Chrome"
-    elif "Firefox/" in ua:
+    elif "Firefox/" in ua or "FxiOS/" in ua:
         browser = "Firefox"
     elif "Safari/" in ua and "Chrome/" not in ua:
         browser = "Safari"
