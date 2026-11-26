@@ -3,7 +3,8 @@ import io
 import os
 import sqlite3
 import uuid
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from urllib.parse import quote
 from flask import (
     Flask,
@@ -892,27 +893,33 @@ TEMPLATES = {
 
 {% else %}
 <div class="row g-2 g-md-3 mb-4">
-    <div class="col-6 col-md-3">
+    <div class="col-12 col-md-4">
+        <div class="card stat-card gold-accent p-3 text-center">
+            <span class="text-muted small fw-bold">إجمالي المسجلين بالمركز</span>
+            <h3 class="fw-bold mb-0 mt-1 text-dark">{{ center_turnout_totals.registered_voters }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">مجموع المصوتين (11:00)</span>
+            <span class="text-muted small fw-bold">مجموع (11:00)</span>
             <h3 class="fw-bold mb-0 mt-1 text-primary">{{ center_turnout_totals.voters_0930 }}</h3>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center" style="border-top-color:#0284c7;">
-            <span class="text-muted small fw-bold">مجموع المصوتين (13:30)</span>
+            <span class="text-muted small fw-bold">مجموع (13:30)</span>
             <h3 class="fw-bold mb-0 mt-1 text-info">{{ center_turnout_totals.voters_1400 }}</h3>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">مجموع المصوتين (15:30)</span>
+            <span class="text-muted small fw-bold">مجموع (15:30)</span>
             <h3 class="fw-bold mb-0 mt-1 text-warning">{{ center_turnout_totals.voters_1700 }}</h3>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
         <div class="card stat-card p-3 text-center" style="border-top-color:#15803d;">
-            <span class="text-muted small fw-bold">مجموع المصوتين (اختتام)</span>
+            <span class="text-muted small fw-bold">مجموع (اختتام)</span>
             <h3 class="fw-bold mb-0 mt-1 text-success">{{ center_turnout_totals.voters_1900 }}</h3>
         </div>
     </div>
@@ -920,54 +927,82 @@ TEMPLATES = {
 
 <div class="card p-3">
     <div class="alert alert-warning-soft small mb-3">
-        <strong>إرشاد التسجيل:</strong> يُدخل عدد المصوتين لكل مكتب في الفترات الأربع (<strong>11:00</strong>، <strong>13:30</strong>، <strong>15:30</strong>، <strong>اختتام</strong>) دون أن يتجاوز العدد المسجل في المكتب، ثم يُضغط على زر <strong>حفظ</strong> مقابل المكتب.
+        <strong>إرشاد التسجيل:</strong> يظهر عدد المسجلين في كل مكتب كمرجع ثابت (غير قابل للتعديل من طرف رئيس المركز)، ولا يُسمح بتجاوزه. تُفتح الفترات بالتسلسل (<strong>11:00</strong> ثم <strong>13:30</strong> ثم <strong>15:30</strong> ثم <strong>اختتام</strong>) بعد إرسال الفترة السابقة. يمكنك تعمير جميع المكاتب ثم الضغط على <strong>حفظ الكل</strong> في الأسفل.
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle text-center">
-            <thead class="table-light">
-                <tr>
-                    <th class="text-end">المكتب</th>
-                    <th>المصوتون<br><span class="badge bg-primary">11:00</span></th>
-                    <th>المصوتون<br><span class="badge bg-info text-dark">13:30</span></th>
-                    <th>المصوتون<br><span class="badge bg-warning text-dark">15:30</span></th>
-                    <th>المصوتون<br><span class="badge bg-success">اختتام</span></th>
-                    <th>آخر تحديث</th>
-                    <th>حفظ</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in turnout_list %}
-                <tr>
-                    <td class="fw-bold text-end">{{ t.office_name }}</td>
-                    <td>
-                        <form id="turnoutForm{{ t.id }}" method="POST" action="{{ url_for('update_turnout', turnout_id=t.id) }}"></form>
-                        <input type="number" min="0" name="voters_0930" value="{{ t.voters_0930 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
-                    </td>
-                    <td>
-                        <input type="number" min="0" name="voters_1400" value="{{ t.voters_1400 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
-                    </td>
-                    <td>
-                        <input type="number" min="0" name="voters_1700" value="{{ t.voters_1700 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
-                    </td>
-                    <td>
-                        <input type="number" min="0" name="voters_1900" value="{{ t.voters_1900 }}" form="turnoutForm{{ t.id }}"
-                               class="form-control form-control-sm text-center mx-auto" style="min-width:78px;max-width:105px;">
-                    </td>
-                    <td class="small text-muted">{{ t.updated_at or '-' }}</td>
-                    <td>
-                        <button type="submit" form="turnoutForm{{ t.id }}" class="btn btn-sm btn-success fw-bold px-3">حفظ</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <form id="saveAllTurnoutForm" method="POST" action="{{ url_for('center_save_all_turnout') }}">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-end">المكتب</th>
+                        <th>المسجلون<br><small class="text-muted">(الحد الأقصى)</small></th>
+                        <th>المصوتون<br><span class="badge bg-primary">11:00</span></th>
+                        <th>المصوتون<br><span class="badge bg-info text-dark">13:30</span></th>
+                        <th>المصوتون<br><span class="badge bg-warning text-dark">15:30</span></th>
+                        <th>المصوتون<br><span class="badge bg-success">اختتام</span></th>
+                        <th>آخر تحديث</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in turnout_list %}
+                    <tr>
+                        <td class="fw-bold text-end">{{ t.office_name }}</td>
+                        <td>
+                            <span class="badge bg-dark fs-6 px-3 py-2">{{ t.registered_voters }}</span>
+                        </td>
+                        <td class="{% if t.filled_0930 %}cell-filled-green{% endif %}">
+                            <input type="number" min="0" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
+                                   name="row_{{ t.id }}_voters_0930" value="{{ t.voters_0930 }}"
+                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_0930 %}input-filled-green{% endif %}"
+                                   style="min-width:78px;max-width:105px;">
+                        </td>
+                        <td class="{% if t.filled_1400 %}cell-filled-green{% endif %}">
+                            <input type="number" min="{{ t.voters_0930 }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
+                                   name="row_{{ t.id }}_voters_1400" value="{{ t.voters_1400 }}"
+                                   {% if not t.filled_0930 %}disabled title="مغلق حتى إرسال فترة 11:00"{% endif %}
+                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_1400 %}input-filled-green{% endif %}"
+                                   style="min-width:78px;max-width:105px;">
+                            {% if not t.filled_0930 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
+                        </td>
+                        <td class="{% if t.filled_1700 %}cell-filled-green{% endif %}">
+                            <input type="number" min="{{ t.voters_1400 }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
+                                   name="row_{{ t.id }}_voters_1700" value="{{ t.voters_1700 }}"
+                                   {% if not t.filled_1400 %}disabled title="مغلق حتى إرسال فترة 13:30"{% endif %}
+                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_1700 %}input-filled-green{% endif %}"
+                                   style="min-width:78px;max-width:105px;">
+                            {% if not t.filled_1400 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
+                        </td>
+                        <td class="{% if t.filled_1900 %}cell-filled-green{% endif %}">
+                            <input type="number" min="{{ t.voters_1700 }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
+                                   name="row_{{ t.id }}_voters_1900" value="{{ t.voters_1900 }}"
+                                   {% if not t.filled_1700 %}disabled title="مغلق حتى إرسال فترة 15:30"{% endif %}
+                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_1900 %}input-filled-green{% endif %}"
+                                   style="min-width:78px;max-width:105px;">
+                            {% if not t.filled_1700 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
+                        </td>
+                        <td class="small text-muted">{{ t.updated_at or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-grid d-md-flex justify-content-md-end mt-3">
+            <button type="submit" class="btn btn-gov-primary btn-lg fw-bold px-5 shadow-sm">
+                حفظ الكل لجميع المكاتب ✓
+            </button>
+        </div>
+    </form>
 </div>
 {% endif %}
+
+<script>
+setInterval(function() {
+    fetch("{{ url_for('center_heartbeat') }}", { method: "POST", credentials: "same-origin" }).catch(function(){});
+}, 45000);
+</script>
+{% endblock %}
 {% endblock %}
 """,
     "admin_dashboard.html": """{% extends "base.html" %}
@@ -993,6 +1028,53 @@ TEMPLATES = {
         <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#resetDataModal">
             تصفير البيانات
         </button>
+    </div>
+</div>
+
+<div class="card p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h5 class="fw-bold mb-0" style="color:#0f2c44;">مراقبة اتصال رؤساء المراكز والأجهزة النشطة (قفل الجلسة الواحدة)</h5>
+        <span class="small text-muted">الأخضر: متصل الآن • الأحمر: غير متصل</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-end">المركز / الحساب</th>
+                    <th>حالة الاتصال</th>
+                    <th>اسم الهاتف / الجهاز</th>
+                    <th>آخر نشاط</th>
+                    <th>إجراء أمني</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cp in center_presence %}
+                <tr>
+                    <td class="text-end fw-bold">{{ cp.title }} <small class="text-muted">({{ cp.username }})</small></td>
+                    <td>
+                        {% if cp.is_online %}
+                        <span class="badge px-3 py-2 fw-bold" style="background-color:#15803d;color:#ffffff;">● متصل الآن</span>
+                        {% else %}
+                        <span class="badge px-3 py-2 fw-bold" style="background-color:#b91c1c;color:#ffffff;">● غير متصل</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-semibold">{{ cp.device_name or 'لم يسجل الدخول بعد' }}</td>
+                    <td class="small text-muted">{{ cp.last_seen or '-' }}</td>
+                    <td>
+                        {% if cp.is_online %}
+                        <form method="POST" action="{{ url_for('admin_kick_center', username=cp.username) }}" class="d-inline">
+                            <input type="hidden" name="current_tab" value="{{ active_tab }}">
+                            <input type="hidden" name="current_center_filter" value="{{ center_filter }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger fw-bold">فصل الجلسة</button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted small">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -1441,6 +1523,64 @@ def _display_password(stored_password):
     return stored_password
 
 
+ONLINE_TIMEOUT_SECONDS = 180
+
+
+def detect_device_label(req):
+    ua = req.headers.get("User-Agent", "") or ""
+    ch_model = (req.headers.get("Sec-CH-UA-Model", "") or "").strip('"').strip()
+    model = ch_model
+    if not model:
+        m = re.search(r"Android\s[\d.]+;\s*([^;)]+?)\s*(?:Build/|\))", ua, re.IGNORECASE)
+        if m:
+            model = m.group(1).strip()
+
+    if "iPhone" in ua:
+        device = "هاتف iPhone"
+    elif "iPad" in ua:
+        device = "جهاز iPad"
+    elif "Android" in ua:
+        device = f"هاتف Android ({model})" if model else "هاتف Android"
+    elif "Windows" in ua:
+        device = "حاسوب Windows"
+    elif "Macintosh" in ua or "Mac OS" in ua:
+        device = "حاسوب Mac"
+    elif "Linux" in ua:
+        device = "جهاز Linux"
+    else:
+        device = "جهاز غير محدد"
+
+    if "Edg/" in ua:
+        browser = "Edge"
+    elif "OPR/" in ua or "Opera" in ua:
+        browser = "Opera"
+    elif "SamsungBrowser" in ua:
+        browser = "Samsung Internet"
+    elif "Chrome/" in ua and "Chromium" not in ua:
+        browser = "Chrome"
+    elif "Firefox/" in ua:
+        browser = "Firefox"
+    elif "Safari/" in ua and "Chrome/" not in ua:
+        browser = "Safari"
+    else:
+        browser = "متصفح ويب"
+
+    return f"{device} — {browser}"
+
+
+def _is_session_recently_active(sess_row):
+    if not sess_row or not sess_row["is_active"] or not sess_row["session_token"]:
+        return False
+    last_seen_str = (sess_row["last_seen"] or "").strip()
+    if not last_seen_str:
+        return False
+    try:
+        last_dt = datetime.strptime(last_seen_str, "%Y-%m-%d %H:%M:%S")
+        return (datetime.now() - last_dt).total_seconds() <= ONLINE_TIMEOUT_SECONDS
+    except ValueError:
+        return False
+
+
 def ensure_turnout_schema(conn):
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS office_turnout (
@@ -1460,6 +1600,16 @@ def ensure_turnout_schema(conn):
             updated_at TEXT DEFAULT '',
             UNIQUE(center_id, office_name),
             FOREIGN KEY (center_id) REFERENCES centers(center_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS center_sessions (
+            username TEXT PRIMARY KEY,
+            session_token TEXT DEFAULT '',
+            device_name TEXT DEFAULT '',
+            ip_address TEXT DEFAULT '',
+            login_at TEXT DEFAULT '',
+            last_seen TEXT DEFAULT '',
+            is_active INTEGER NOT NULL DEFAULT 0
         );
     """)
     offices = conn.execute("""
@@ -1493,6 +1643,11 @@ def ensure_turnout_schema(conn):
             INSERT OR IGNORE INTO user_passwords (username, password, updated_at, session_version)
             VALUES (?, ?, '', 'v1')
         """, (uname, uinfo["password"]))
+        if uinfo["role"] == "center_head":
+            conn.execute("""
+                INSERT OR IGNORE INTO center_sessions (username, session_token, device_name, ip_address, login_at, last_seen, is_active)
+                VALUES (?, '', '', '', '', '', 0)
+            """, (uname,))
     conn.commit()
 
 
@@ -1601,13 +1756,46 @@ def enforce_active_session_version():
         "SELECT session_version FROM user_passwords WHERE username = ?",
         (uname,),
     ).fetchone()
-    conn.close()
     current_version = (row["session_version"] if row and row["session_version"] else "v1")
     if session.get("session_version") != current_version:
+        conn.close()
         session.clear()
         flash("تم تغيير كلمة السر لهذا الحساب. يرجى تسجيل الدخول مجدداً بكلمة السر الجديدة.", "warning")
         return redirect(url_for("login"))
+
+    if session.get("role") == "center_head":
+        srow = conn.execute("SELECT * FROM center_sessions WHERE username = ?", (uname,)).fetchone()
+        local_token = session.get("session_token", "")
+        if not srow or not srow["is_active"] or srow["session_token"] != local_token:
+            conn.close()
+            session.clear()
+            flash("تم إنهاء هذه الجلسة من طرف المندوب البلدي أو انتهت صلاحيتها. يرجى تسجيل الدخول مجدداً.", "warning")
+            return redirect(url_for("login"))
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "UPDATE center_sessions SET last_seen = ?, is_active = 1 WHERE username = ?",
+            (now_str, uname),
+        )
+        conn.commit()
+    conn.close()
     return None
+
+
+@app.route("/center/heartbeat", methods=["POST"])
+def center_heartbeat():
+    if session.get("role") != "center_head":
+        return ("", 204)
+    uname = session.get("username")
+    token = session.get("session_token", "")
+    conn = get_db()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "UPDATE center_sessions SET last_seen = ? WHERE username = ? AND session_token = ? AND is_active = 1",
+        (now_str, uname, token),
+    )
+    conn.commit()
+    conn.close()
+    return ("", 204)
 
 
 @app.route("/authority_logo.svg")
@@ -1624,22 +1812,80 @@ def login():
         password = request.form.get("password", "").strip()
         user = effective_users.get(username)
         if user and _verify_password(user["password"], password):
+            conn = get_db()
+            ensure_turnout_schema(conn)
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            device_label = detect_device_label(request)
+            ip_addr = (request.headers.get("X-Forwarded-For", request.remote_addr) or "").split(",")[0].strip()
+
+            if user["role"] == "center_head":
+                existing = conn.execute("SELECT * FROM center_sessions WHERE username = ?", (username,)).fetchone()
+                if _is_session_recently_active(existing):
+                    conn.close()
+                    flash(
+                        f"تنبيه أمني: هذا الحساب متصل حالياً من جهاز آخر ({existing['device_name']}). "
+                        f"لا يمكن فتح الحساب من هاتفين في نفس الوقت إلا بعد تسجيل الخروج من الجهاز الأول أو فصل الجلسة من طرف المندوب البلدي.",
+                        "danger",
+                    )
+                    return render_template_string(TEMPLATES["login.html"], users=effective_users)
+
+                new_token = str(uuid.uuid4())
+                conn.execute("""
+                    UPDATE center_sessions
+                    SET session_token = ?, device_name = ?, ip_address = ?, login_at = ?, last_seen = ?, is_active = 1
+                    WHERE username = ?
+                """, (new_token, device_label, ip_addr, now_str, now_str, username))
+                conn.commit()
+                conn.close()
+
+                session["username"] = username
+                session["role"] = user["role"]
+                session["center_id"] = user["center_id"]
+                session["title"] = user["title"]
+                session["session_version"] = user.get("session_version", "v1")
+                session["session_token"] = new_token
+                return redirect(url_for("center_dashboard", view="absences"))
+
+            conn.close()
             session["username"] = username
             session["role"] = user["role"]
             session["center_id"] = user["center_id"]
             session["title"] = user["title"]
             session["session_version"] = user.get("session_version", "v1")
-            if user["role"] == "admin":
-                return redirect(url_for("admin_dashboard"))
-            return redirect(url_for("center_dashboard", view="absences"))
+            return redirect(url_for("admin_dashboard"))
         flash("اسم المستخدم أو كلمة المرور غير صحيحة", "danger")
     return render_template_string(TEMPLATES["login.html"], users=effective_users)
 
 
 @app.route("/logout")
 def logout():
+    uname = session.get("username")
+    if uname and session.get("role") == "center_head":
+        conn = get_db()
+        conn.execute(
+            "UPDATE center_sessions SET is_active = 0, session_token = '' WHERE username = ?",
+            (uname,),
+        )
+        conn.commit()
+        conn.close()
     session.clear()
     return redirect(url_for("login"))
+
+
+@app.route("/admin/kick_center/<username>", methods=["POST"])
+def admin_kick_center(username):
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+    conn = get_db()
+    ensure_turnout_schema(conn)
+    conn.execute(
+        "UPDATE center_sessions SET is_active = 0, session_token = '' WHERE username = ?",
+        (username,),
+    )
+    conn.commit()
+    conn.close()
+    flash(f"تم فصل الجلسة النشطة للحساب ({username}) بنجاح. يمكن لرئيس المركز الآن تسجيل الدخول من جهازه المعتمد.", "success")
+    return redirect(url_for("admin_dashboard", tab=request.form.get("current_tab", "absences"), center_id=request.form.get("current_center_filter", "all")))
 
 
 @app.route("/center")
@@ -1690,8 +1936,9 @@ def center_dashboard():
     """, (center_id,)).fetchone()
 
     turnout_rows = conn.execute("""
-        SELECT id, center_id, center_name, office_name,
-               voters_0930, voters_1400, voters_1700, voters_1900, updated_at
+        SELECT id, center_id, center_name, office_name, registered_voters,
+               voters_0930, voters_1400, voters_1700, voters_1900,
+               filled_0930, filled_1400, filled_1700, filled_1900, updated_at
         FROM office_turnout
         WHERE center_id = ?
         ORDER BY id
@@ -1699,12 +1946,18 @@ def center_dashboard():
     conn.close()
 
     turnout_list = []
-    sum_0930 = sum_1400 = sum_1700 = sum_1900 = 0
+    sum_reg = sum_0930 = sum_1400 = sum_1700 = sum_1900 = 0
     for r in turnout_rows:
+        reg = r["registered_voters"] or 0
         v0930 = r["voters_0930"] or 0
         v1400 = r["voters_1400"] or 0
         v1700 = r["voters_1700"] or 0
         v1900 = r["voters_1900"] or 0
+        f0930 = 1 if (r["filled_0930"] or v0930 > 0) else 0
+        f1400 = 1 if (r["filled_1400"] or v1400 > 0) else 0
+        f1700 = 1 if (r["filled_1700"] or v1700 > 0) else 0
+        f1900 = 1 if (r["filled_1900"] or v1900 > 0) else 0
+        sum_reg += reg
         sum_0930 += v0930
         sum_1400 += v1400
         sum_1700 += v1700
@@ -1712,14 +1965,20 @@ def center_dashboard():
         turnout_list.append({
             "id": r["id"],
             "office_name": r["office_name"],
+            "registered_voters": reg,
             "voters_0930": v0930,
             "voters_1400": v1400,
             "voters_1700": v1700,
             "voters_1900": v1900,
+            "filled_0930": f0930,
+            "filled_1400": f1400,
+            "filled_1700": f1700,
+            "filled_1900": f1900,
             "updated_at": r["updated_at"],
         })
 
     center_turnout_totals = {
+        "registered_voters": sum_reg,
         "voters_0930": sum_0930,
         "voters_1400": sum_1400,
         "voters_1700": sum_1700,
@@ -1742,6 +2001,87 @@ def center_dashboard():
     )
 
 
+def _validate_and_save_office_turnout(conn, row, form_dict, prefix="", fixed_now=None):
+    reg_limit = row["registered_voters"] or 0
+    v0930 = row["voters_0930"] or 0
+    v1400 = row["voters_1400"] or 0
+    v1700 = row["voters_1700"] or 0
+    v1900 = row["voters_1900"] or 0
+
+    f0930 = 1 if (row["filled_0930"] or v0930 > 0) else 0
+    f1400 = 1 if (row["filled_1400"] or v1400 > 0) else 0
+    f1700 = 1 if (row["filled_1700"] or v1700 > 0) else 0
+    f1900 = 1 if (row["filled_1900"] or v1900 > 0) else 0
+
+    def read_int(key):
+        raw = (form_dict.get(key, "") or "").strip()
+        if raw == "":
+            return None
+        val = int(raw)
+        if val < 0:
+            raise ValueError("negative")
+        return val
+
+    try:
+        in_0930 = read_int(f"{prefix}voters_0930")
+        in_1400 = read_int(f"{prefix}voters_1400")
+        in_1700 = read_int(f"{prefix}voters_1700")
+        in_1900 = read_int(f"{prefix}voters_1900")
+    except ValueError:
+        return False, f"خطأ في المكتب ({row['office_name']}): يرجى إدخال أعداد صحيحة موجبة فقط."
+
+    if in_0930 is not None:
+        v0930 = in_0930
+        f0930 = 1
+
+    if in_1400 is not None:
+        if not f0930:
+            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (13:30) قبل إرسال فترة (11:00)."
+        v1400 = in_1400
+        f1400 = 1
+
+    if in_1700 is not None:
+        if not f1400:
+            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (15:30) قبل إرسال فترة (13:30)."
+        v1700 = in_1700
+        f1700 = 1
+
+    if in_1900 is not None:
+        if not f1700:
+            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (اختتام) قبل إرسال فترة (15:30)."
+        v1900 = in_1900
+        f1900 = 1
+
+    if reg_limit > 0 and max(v0930, v1400, v1700, v1900) > reg_limit:
+        return False, f"خطأ في المكتب ({row['office_name']}): عدد المصوتين المدخل يتجاوز عدد المسجلين بالمكتب ({reg_limit})."
+
+    submitted = []
+    if f0930:
+        submitted.append(("11:00", v0930))
+    if f1400:
+        submitted.append(("13:30", v1400))
+    if f1700:
+        submitted.append(("15:30", v1700))
+    if f1900:
+        submitted.append(("اختتام", v1900))
+
+    for i in range(1, len(submitted)):
+        prev_lbl, prev_v = submitted[i - 1]
+        curr_lbl, curr_v = submitted[i]
+        if curr_v < prev_v:
+            return False, f"خطأ في المكتب ({row['office_name']}): عدد المصوتين في ({curr_lbl}) ({curr_v}) أقل من الفترة السابقة ({prev_lbl}) ({prev_v})."
+
+    now_str = fixed_now or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("""
+        UPDATE office_turnout
+        SET voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
+            filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?,
+            updated_at = ?
+        WHERE id = ?
+    """, (v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, row["id"]))
+    return True, now_str
+
+
 @app.route("/center/update_turnout/<int:turnout_id>", methods=["POST"])
 def update_turnout(turnout_id):
     if session.get("role") != "center_head":
@@ -1755,65 +2095,45 @@ def update_turnout(turnout_id):
         flash("غير مصرح لك بتعديل بيانات مركز آخر!", "danger")
         return redirect(url_for("center_dashboard", view="turnout"))
 
-    def parse_non_neg_int(field_name, fallback):
-        raw_val = request.form.get(field_name, "").strip()
-        if raw_val == "":
-            return fallback
-        try:
-            val = int(raw_val)
-            return val if val >= 0 else fallback
-        except ValueError:
-            return fallback
-
-    v0930 = parse_non_neg_int("voters_0930", row["voters_0930"] or 0)
-    v1400 = parse_non_neg_int("voters_1400", row["voters_1400"] or 0)
-    v1700 = parse_non_neg_int("voters_1700", row["voters_1700"] or 0)
-    v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
-
-    registered_limit = row["registered_voters"] or 0
-    if registered_limit > 0 and max(v0930, v1400, v1700, v1900) > registered_limit:
+    ok, msg = _validate_and_save_office_turnout(conn, row, request.form, prefix="")
+    if not ok:
         conn.close()
-        flash(
-            f"خطأ: عدد المصوتين المدخل للمكتب ({row['office_name']}) أكبر من العدد المسجل في المكتب ({registered_limit}). لم يتم الحفظ!",
-            "danger",
-        )
+        flash(msg, "danger")
         return redirect(url_for("center_dashboard", view="turnout"))
 
-    # Cumulative turnout check: each period must be >= the previous period
-    periods_seq = [
-        ("11:00", v0930),
-        ("13:30", v1400),
-        ("15:30", v1700),
-        ("اختتام", v1900),
-    ]
-    for i in range(1, len(periods_seq)):
-        prev_label, prev_val = periods_seq[i - 1]
-        curr_label, curr_val = periods_seq[i]
-        if curr_val < prev_val:
-            conn.close()
-            flash(
-                f"خطأ: عدد المصوتين في فترة ({curr_label}) ({curr_val}) لا يمكن أن يكون أقل من الفترة السابقة ({prev_label}) ({prev_val}) في المكتب ({row['office_name']}). لم يتم الحفظ!",
-                "danger",
-            )
-            return redirect(url_for("center_dashboard", view="turnout"))
-
-    f0930 = 1 if v0930 > 0 else 0
-    f1400 = 1 if v1400 > 0 else 0
-    f1700 = 1 if v1700 > 0 else 0
-    f1900 = 1 if v1900 > 0 else 0
-
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("""
-        UPDATE office_turnout
-        SET voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
-            filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?,
-            updated_at = ?
-        WHERE id = ?
-    """, (v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, turnout_id))
     conn.commit()
     conn.close()
-
     flash(f"تم حفظ عدد المصوتين للمكتب ({row['office_name']}) بنجاح.", "success")
+    return redirect(url_for("center_dashboard", view="turnout"))
+
+
+@app.route("/center/save_all_turnout", methods=["POST"])
+def center_save_all_turnout():
+    if session.get("role") != "center_head":
+        return redirect(url_for("login"))
+
+    center_id = session["center_id"]
+    conn = get_db()
+    ensure_turnout_schema(conn)
+    rows = conn.execute(
+        "SELECT * FROM office_turnout WHERE center_id = ? ORDER BY id",
+        (center_id,),
+    ).fetchall()
+
+    batch_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for row in rows:
+        ok, msg = _validate_and_save_office_turnout(
+            conn, row, request.form, prefix=f"row_{row['id']}_", fixed_now=batch_timestamp
+        )
+        if not ok:
+            conn.rollback()
+            conn.close()
+            flash(msg, "danger")
+            return redirect(url_for("center_dashboard", view="turnout"))
+
+    conn.commit()
+    conn.close()
+    flash("تم حفظ بيانات جميع مكاتب المركز دفعة واحدة بنجاح.", "success")
     return redirect(url_for("center_dashboard", view="turnout"))
 
 
@@ -2006,7 +2326,27 @@ def admin_dashboard():
         "pct_1900": calc_municipal_turnout_pct(total_1900, MUNICIPAL_TOTAL_REGISTERED),
     }
 
+    conn_pres = get_db()
+    ensure_turnout_schema(conn_pres)
+    sess_rows = {
+        r["username"]: r
+        for r in conn_pres.execute("SELECT * FROM center_sessions").fetchall()
+    }
+    conn_pres.close()
+
     managed_users = get_effective_users()
+    center_presence = []
+    for uname, uinfo in managed_users.items():
+        if uinfo.get("role") == "center_head":
+            srow = sess_rows.get(uname)
+            center_presence.append({
+                "username": uname,
+                "title": uinfo.get("title", uname),
+                "is_online": _is_session_recently_active(srow),
+                "device_name": (srow["device_name"] if srow else "") or "",
+                "last_seen": (srow["last_seen"] if srow else "") or "",
+            })
+
     return render_template_string(
         TEMPLATES["admin_dashboard.html"],
         active_tab=active_tab,
@@ -2018,6 +2358,7 @@ def admin_dashboard():
         center_turnout_summary=center_turnout_summary,
         turnout_overall=turnout_overall,
         managed_users=managed_users,
+        center_presence=center_presence,
     )
 
 
