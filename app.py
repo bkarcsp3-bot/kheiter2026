@@ -23,10 +23,11 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "kheiter_election_2026_online_secret_key")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.environ.get("DB_DIR", "/tmp" if os.path.exists("/tmp") else BASE_DIR)
+DB_DIR = os.environ.get("DB_DIR", BASE_DIR)
 os.makedirs(DB_DIR, exist_ok=True)
 
 DB_PATH = os.path.join(DB_DIR, "election_attendance.db")
+BACKUP_JSON_PATH = os.path.join(DB_DIR, "election_state_backup.json")
 
 AUTHORITY_LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 380" width="400" height="380" role="img" aria-label="شعار المعلم التاريخي - بلدية الخيثر">
   <defs>
@@ -1355,7 +1356,33 @@ setInterval(function() {
             </tbody>
         </table>
     </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 small text-muted">
+        <span>يتم حفظ الأرقام المسجلة (الرقم المحجوز) والبيانات تلقائياً في قاعدة البيانات وملف النسخ الاحتياطي عند كل حفظ.</span>
+        <button type="button" class="btn btn-gov-primary btn-sm fw-bold px-4" onclick="saveAllAdminTurnoutRows()">حفظ جميع الصفوف المعدّلة ✓</button>
+    </div>
 </div>
+<script>
+function saveAllAdminTurnoutRows() {
+    const forms = Array.from(document.querySelectorAll('form[id^="adminTurnoutForm"]'));
+    if (!forms.length) return;
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'جاري الحفظ...';
+    let idx = 0;
+    function sendNext() {
+        if (idx >= forms.length) {
+            window.location.reload();
+            return;
+        }
+        const f = forms[idx++];
+        const fd = new FormData(f);
+        fetch(f.action, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(() => sendNext())
+            .catch(() => sendNext());
+    }
+    sendNext();
+}
+</script>
 {% endif %}
 
 <div class="modal fade" id="importCsvModal" tabindex="-1" aria-hidden="true">
@@ -1723,6 +1750,128 @@ def _ensure_staff_tracking_columns(conn):
         conn.execute("ALTER TABLE election_staff ADD COLUMN updated_at TEXT DEFAULT ''")
 
 
+
+def save_state_snapshot(conn=None):
+    import json
+    close_after = False
+    if conn is None:
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.row_factory = sqlite3.Row
+        close_after = True
+    try:
+        turnout_rows = []
+        t_exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='office_turnout'").fetchone()
+        if t_exists:
+            for r in conn.execute("SELECT center_id, center_name, office_name, registered_voters, voters_0930, voters_1400, voters_1700, voters_1900, filled_0930, filled_1400, filled_1700, filled_1900, updated_at FROM office_turnout ORDER BY id").fetchall():
+                turnout_rows.append(dict(r))
+
+        staff_updates = []
+        s_exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='election_staff'").fetchone()
+        if s_exists:
+            for r in conn.execute("SELECT center_name, office_name, list_type, role_title, last_name_ar, first_name_ar, status, absence_reason, replacement_name, updated_at FROM election_staff WHERE status = 'غائب' OR absence_reason != '' OR replacement_name != ''").fetchall():
+                staff_updates.append(dict(r))
+
+        pw_rows = []
+        p_exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_passwords'").fetchone()
+        if p_exists:
+            for r in conn.execute("SELECT username, password, updated_at, session_version FROM user_passwords").fetchall():
+                pw_rows.append(dict(r))
+
+        payload = {
+            "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "turnout": turnout_rows,
+            "absences": staff_updates,
+            "passwords": pw_rows,
+        }
+        tmp_path = BACKUP_JSON_PATH + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as fp:
+            json.dump(payload, fp, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, BACKUP_JSON_PATH)
+    except Exception:
+        pass
+    finally:
+        if close_after:
+            conn.close()
+
+
+def restore_state_snapshot_if_needed(conn):
+    import json
+    if not os.path.exists(BACKUP_JSON_PATH):
+        return
+    try:
+        with open(BACKUP_JSON_PATH, "r", encoding="utf-8") as fp:
+            payload = json.load(fp)
+    except Exception:
+        return
+    if not isinstance(payload, dict):
+        return
+
+    for tr in payload.get("turnout", []):
+        c_name = tr.get("center_name", "")
+        o_name = tr.get("office_name", "")
+        if not c_name or not o_name:
+            continue
+        cur_row = conn.execute(
+            "SELECT registered_voters, voters_0930, voters_1400, voters_1700, voters_1900 FROM office_turnout WHERE center_name = ? AND office_name = ?",
+            (c_name, o_name),
+        ).fetchone()
+        if cur_row:
+            b_reg = int(tr.get("registered_voters") or 0)
+            b_0930 = int(tr.get("voters_0930") or 0)
+            b_1400 = int(tr.get("voters_1400") or 0)
+            b_1700 = int(tr.get("voters_1700") or 0)
+            b_1900 = int(tr.get("voters_1900") or 0)
+            new_reg = cur_row["registered_voters"] or b_reg
+            new_0930 = cur_row["voters_0930"] or b_0930
+            new_1400 = cur_row["voters_1400"] or b_1400
+            new_1700 = cur_row["voters_1700"] or b_1700
+            new_1900 = cur_row["voters_1900"] or b_1900
+            if (new_reg, new_0930, new_1400, new_1700, new_1900) != (
+                cur_row["registered_voters"], cur_row["voters_0930"], cur_row["voters_1400"], cur_row["voters_1700"], cur_row["voters_1900"]
+            ):
+                conn.execute("""
+                    UPDATE office_turnout
+                    SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
+                        filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?,
+                        updated_at = COALESCE(NULLIF(updated_at, ''), ?)
+                    WHERE center_name = ? AND office_name = ?
+                """, (
+                    new_reg, new_0930, new_1400, new_1700, new_1900,
+                    1 if new_0930 > 0 else 0, 1 if new_1400 > 0 else 0, 1 if new_1700 > 0 else 0, 1 if new_1900 > 0 else 0,
+                    tr.get("updated_at") or "", c_name, o_name,
+                ))
+
+    for ab in payload.get("absences", []):
+        if ab.get("status") == "غائب":
+            conn.execute("""
+                UPDATE election_staff
+                SET status = 'غائب',
+                    absence_reason = COALESCE(NULLIF(absence_reason, ''), ?),
+                    replacement_name = COALESCE(NULLIF(replacement_name, ''), ?),
+                    updated_at = COALESCE(NULLIF(updated_at, ''), ?)
+                WHERE center_name = ? AND office_name = ? AND list_type = ? AND role_title = ?
+                  AND last_name_ar = ? AND first_name_ar = ? AND status != 'غائب'
+            """, (
+                ab.get("absence_reason") or "", ab.get("replacement_name") or "", ab.get("updated_at") or "",
+                ab.get("center_name") or "", ab.get("office_name") or "", ab.get("list_type") or "",
+                ab.get("role_title") or "", ab.get("last_name_ar") or "", ab.get("first_name_ar") or "",
+            ))
+
+    for pw in payload.get("passwords", []):
+        uname = pw.get("username")
+        p_val = pw.get("password")
+        if uname and p_val:
+            conn.execute("""
+                INSERT INTO user_passwords (username, password, updated_at, session_version)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(username) DO UPDATE SET
+                    password = excluded.password,
+                    updated_at = COALESCE(NULLIF(user_passwords.updated_at, ''), excluded.updated_at),
+                    session_version = COALESCE(NULLIF(user_passwords.session_version, ''), excluded.session_version)
+            """, (uname, p_val, pw.get("updated_at") or "", pw.get("session_version") or "v1"))
+    conn.commit()
+
+
 def init_database():
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
@@ -1760,6 +1909,7 @@ def init_database():
                     st
                 )
         conn.commit()
+        restore_state_snapshot_if_needed(conn)
     finally:
         conn.close()
 
@@ -1811,6 +1961,7 @@ def enforce_active_session_version():
             (now_str, uname),
         )
         conn.commit()
+    save_state_snapshot(conn)
     conn.close()
     return None
 
@@ -1828,6 +1979,7 @@ def center_heartbeat():
         (now_str, uname, token),
     )
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
     return ("", 204)
 
@@ -1917,6 +2069,7 @@ def admin_kick_center(username):
         (username,),
     )
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
     flash(f"تم فصل الجلسة النشطة للحساب ({username}) بنجاح. يمكن لرئيس المركز الآن تسجيل الدخول من جهازه المعتمد.", "success")
     return redirect(url_for("admin_dashboard", tab=request.form.get("current_tab", "absences"), center_id=request.form.get("current_center_filter", "all")))
@@ -2136,6 +2289,7 @@ def update_turnout(turnout_id):
         return redirect(url_for("center_dashboard", view="turnout"))
 
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
     flash(f"تم حفظ عدد المصوتين للمكتب ({row['office_name']}) بنجاح.", "success")
     return redirect(url_for("center_dashboard", view="turnout"))
@@ -2166,6 +2320,7 @@ def center_save_all_turnout():
             return redirect(url_for("center_dashboard", view="turnout"))
 
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
     flash("تم حفظ بيانات جميع مكاتب المركز دفعة واحدة بنجاح.", "success")
     return redirect(url_for("center_dashboard", view="turnout"))
@@ -2204,6 +2359,7 @@ def toggle_status(staff_id):
         WHERE id = ?
     """, (new_status, reason, replacement, now_str, staff_id))
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
 
     flash(f"تم تحديث وضعية ({staff['last_name_ar']} {staff['first_name_ar']}) إلى: {new_status}", "success")
@@ -2464,6 +2620,7 @@ def admin_update_turnout(turnout_id):
         WHERE id = ?
     """, (reg_val, v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, turnout_id))
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
 
     flash(f"تم حفظ وتحديث بيانات المكتب ({row['office_name']} - {row['center_name']}) بنجاح.", "success")
@@ -2509,6 +2666,7 @@ def reset_all_data():
                 updated_at = ''
         """)
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
 
     flash("تمت إعادة ضبط وتصفير البيانات بنجاح! كافة المؤطرين عادوا إلى وضعية (حاضر) وتم تصفير عدادات المصوتين.", "success")
@@ -2768,6 +2926,7 @@ def admin_change_passwords():
             updated_titles.append(uinfo["title"])
 
     conn.commit()
+    save_state_snapshot(conn)
     conn.close()
 
     if updated_titles:
