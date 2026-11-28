@@ -895,41 +895,44 @@ TEMPLATES = {
 
 {% else %}
 <div class="row g-2 g-md-3 mb-4">
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-3">
         <div class="card stat-card gold-accent p-3 text-center">
             <span class="text-muted small fw-bold">إجمالي المسجلين بالمركز</span>
             <h3 class="fw-bold mb-0 mt-1 text-dark">{{ center_turnout_totals.registered_voters }}</h3>
         </div>
     </div>
-    <div class="col-6 col-md-2">
-        <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">مجموع (11:00)</span>
-            <h3 class="fw-bold mb-0 mt-1 text-primary">{{ center_turnout_totals.voters_0930 }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-2">
-        <div class="card stat-card p-3 text-center" style="border-top-color:#0284c7;">
-            <span class="text-muted small fw-bold">مجموع (13:30)</span>
-            <h3 class="fw-bold mb-0 mt-1 text-info">{{ center_turnout_totals.voters_1400 }}</h3>
-        </div>
-    </div>
-    <div class="col-6 col-md-2">
+    <div class="col-6 col-md-3">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">مجموع (15:30)</span>
-            <h3 class="fw-bold mb-0 mt-1 text-warning">{{ center_turnout_totals.voters_1700 }}</h3>
+            <span class="text-muted small fw-bold">مجموع (15:20) — بلدي / ولائي</span>
+            <div class="d-flex justify-content-center gap-3 mt-1">
+                <div><small class="text-primary fw-bold d-block">بلدي</small><h4 class="fw-bold mb-0 text-primary">{{ center_turnout_totals.voters_1700 }}</h4></div>
+                <div class="border-start ps-3"><small class="text-secondary fw-bold d-block">ولائي</small><h4 class="fw-bold mb-0 text-secondary">{{ center_turnout_totals.voters_1700_wilai }}</h4></div>
+            </div>
         </div>
     </div>
-    <div class="col-6 col-md-2">
+    <div class="col-6 col-md-3">
         <div class="card stat-card p-3 text-center" style="border-top-color:#15803d;">
-            <span class="text-muted small fw-bold">مجموع (اختتام)</span>
-            <h3 class="fw-bold mb-0 mt-1 text-success">{{ center_turnout_totals.voters_1900 }}</h3>
+            <span class="text-muted small fw-bold">مجموع (اختتام) — بلدي / ولائي</span>
+            <div class="d-flex justify-content-center gap-3 mt-1">
+                <div><small class="text-success fw-bold d-block">بلدي</small><h4 class="fw-bold mb-0 text-success">{{ center_turnout_totals.voters_1900 }}</h4></div>
+                <div class="border-start ps-3"><small class="text-dark fw-bold d-block">ولائي</small><h4 class="fw-bold mb-0 text-dark">{{ center_turnout_totals.voters_1900_wilai }}</h4></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="card stat-card p-3 text-center" style="border-top-color:#0f2c44;">
+            <span class="text-muted small fw-bold">النسبة النهائية بالمركز (2)</span>
+            <div class="d-flex justify-content-center gap-3 mt-1">
+                <div><small class="text-primary fw-bold d-block">بلدي</small><h4 class="fw-bold mb-0 text-primary">{{ center_turnout_totals.pct_baladi }}%</h4></div>
+                <div class="border-start ps-3"><small class="text-secondary fw-bold d-block">ولائي</small><h4 class="fw-bold mb-0 text-secondary">{{ center_turnout_totals.pct_wilai }}%</h4></div>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="card p-3">
     <div class="alert alert-warning-soft small mb-3">
-        <strong>إرشاد التسجيل:</strong> يظهر عدد المسجلين في كل مكتب كمرجع ثابت (غير قابل للتعديل من طرف رئيس المركز)، ولا يُسمح بتجاوزه. تُفتح الفترات بالتسلسل (<strong>11:00</strong> ثم <strong>13:30</strong> ثم <strong>15:30</strong> ثم <strong>اختتام</strong>) بعد إرسال الفترة السابقة. يمكنك تعمير جميع المكاتب ثم الضغط على <strong>حفظ الكل</strong> في الأسفل.
+        <strong>إرشاد التسجيل:</strong> يظهر عدد المسجلين في كل مكتب كمرجع ثابت (غير قابل للتعديل من طرف رئيس المركز)، ولا يُسمح بتجاوزه. توجد فترتان فقط: <strong>15:20</strong> ثم <strong>اختتام</strong>، وتحتوي كل فترة على خانتين مستقلتين: <strong>بلدي</strong> و<strong>ولائي</strong>، ليصبح المجموع نسبتين (بلدي / ولائي).
     </div>
 
     <form id="saveAllTurnoutForm" method="POST" action="{{ url_for('center_save_all_turnout') }}">
@@ -937,13 +940,19 @@ TEMPLATES = {
             <table class="table table-bordered align-middle text-center">
                 <thead class="table-light">
                     <tr>
-                        <th class="text-end">المكتب</th>
-                        <th>المسجلون<br><small class="text-muted">(الحد الأقصى)</small></th>
-                        <th>المصوتون<br><span class="badge bg-primary">11:00</span></th>
-                        <th>المصوتون<br><span class="badge bg-info text-dark">13:30</span></th>
-                        <th>المصوتون<br><span class="badge bg-warning text-dark">15:30</span></th>
-                        <th>المصوتون<br><span class="badge bg-success">اختتام</span></th>
-                        <th>آخر تحديث</th>
+                        <th class="text-end" rowspan="2">المكتب</th>
+                        <th rowspan="2">المسجلون<br><small class="text-muted">(الحد الأقصى)</small></th>
+                        <th colspan="2"><span class="badge bg-warning text-dark fs-6">15:20</span></th>
+                        <th colspan="2"><span class="badge bg-success fs-6">اختتام</span></th>
+                        <th rowspan="2">نسبة البلدي</th>
+                        <th rowspan="2">نسبة الولائي</th>
+                        <th rowspan="2">آخر تحديث</th>
+                    </tr>
+                    <tr>
+                        <th style="background-color:#0f2c44;color:#fff;">بلدي</th>
+                        <th style="background-color:#154360;color:#fff;">ولائي</th>
+                        <th style="background-color:#15803d;color:#fff;">بلدي</th>
+                        <th style="background-color:#166534;color:#fff;">ولائي</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -953,36 +962,36 @@ TEMPLATES = {
                         <td>
                             <span class="badge bg-dark fs-6 px-3 py-2">{{ t.registered_voters }}</span>
                         </td>
-                        <td class="{% if t.filled_0930 %}cell-filled-green{% endif %}">
+                        <td class="{% if t.filled_1700 %}cell-filled-green{% endif %}">
                             <input type="number" min="0" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
-                                   name="row_{{ t.id }}_voters_0930" value="{{ t.voters_0930 }}"
-                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_0930 %}input-filled-green{% endif %}"
-                                   style="min-width:78px;max-width:105px;">
-                        </td>
-                        <td class="{% if t.filled_1400 %}cell-filled-green{% endif %}">
-                            <input type="number" min="{{ t.voters_0930 }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
-                                   name="row_{{ t.id }}_voters_1400" value="{{ t.voters_1400 }}"
-                                   {% if not t.filled_0930 %}disabled title="مغلق حتى إرسال فترة 11:00"{% endif %}
-                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_1400 %}input-filled-green{% endif %}"
-                                   style="min-width:78px;max-width:105px;">
-                            {% if not t.filled_0930 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
+                                   name="row_{{ t.id }}_voters_1700" value="{{ t.voters_1700 }}"
+                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_1700 %}input-filled-green{% endif %}"
+                                   style="min-width:74px;max-width:98px;">
                         </td>
                         <td class="{% if t.filled_1700 %}cell-filled-green{% endif %}">
-                            <input type="number" min="{{ t.voters_1400 }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
-                                   name="row_{{ t.id }}_voters_1700" value="{{ t.voters_1700 }}"
-                                   {% if not t.filled_1400 %}disabled title="مغلق حتى إرسال فترة 13:30"{% endif %}
+                            <input type="number" min="0" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
+                                   name="row_{{ t.id }}_voters_1700_wilai" value="{{ t.voters_1700_wilai }}"
                                    class="form-control form-control-sm text-center mx-auto {% if t.filled_1700 %}input-filled-green{% endif %}"
-                                   style="min-width:78px;max-width:105px;">
-                            {% if not t.filled_1400 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
+                                   style="min-width:74px;max-width:98px;">
                         </td>
                         <td class="{% if t.filled_1900 %}cell-filled-green{% endif %}">
                             <input type="number" min="{{ t.voters_1700 }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
                                    name="row_{{ t.id }}_voters_1900" value="{{ t.voters_1900 }}"
-                                   {% if not t.filled_1700 %}disabled title="مغلق حتى إرسال فترة 15:30"{% endif %}
+                                   {% if not t.filled_1700 %}disabled title="مغلق حتى إرسال فترة 15:20"{% endif %}
                                    class="form-control form-control-sm text-center mx-auto {% if t.filled_1900 %}input-filled-green{% endif %}"
-                                   style="min-width:78px;max-width:105px;">
+                                   style="min-width:74px;max-width:98px;">
                             {% if not t.filled_1700 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
                         </td>
+                        <td class="{% if t.filled_1900 %}cell-filled-green{% endif %}">
+                            <input type="number" min="{{ t.voters_1700_wilai }}" {% if t.registered_voters > 0 %}max="{{ t.registered_voters }}"{% endif %}
+                                   name="row_{{ t.id }}_voters_1900_wilai" value="{{ t.voters_1900_wilai }}"
+                                   {% if not t.filled_1700 %}disabled title="مغلق حتى إرسال فترة 15:20"{% endif %}
+                                   class="form-control form-control-sm text-center mx-auto {% if t.filled_1900 %}input-filled-green{% endif %}"
+                                   style="min-width:74px;max-width:98px;">
+                            {% if not t.filled_1700 %}<small class="text-muted d-block">مغلق 🔒</small>{% endif %}
+                        </td>
+                        <td class="fw-bold text-primary">{{ t.latest_pct_baladi }}%</td>
+                        <td class="fw-bold text-secondary">{{ t.latest_pct_wilai }}%</td>
                         <td class="small text-muted">{{ t.updated_at or '-' }}</td>
                     </tr>
                     {% endfor %}
@@ -1091,7 +1100,7 @@ setInterval(function() {
         <a class="nav-link fw-bold text-center {% if active_tab == 'turnout' %}active{% endif %}"
            {% if active_tab == 'turnout' %}style="background-color:#0f2c44;"{% endif %}
            href="{{ url_for('admin_dashboard', tab='turnout', center_id=center_filter) }}">
-            نسب المشاركة (11:00 / 13:30 / 15:30 / اختتام)
+            نسب المشاركة (15:20 / اختتام — بلدي وولائي)
         </a>
     </li>
 </ul>
@@ -1199,64 +1208,90 @@ setInterval(function() {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="fw-bold small" style="color:#0f2c44;">مؤشر استلام الأرقام من المكاتب ({{ turnout_overall.offices_count }} مكتب):</span>
         <div class="d-flex flex-wrap gap-2 small">
-            <span class="badge bg-primary">11:00 — تم إدخال {{ turnout_overall.reported_0930 }} / {{ turnout_overall.offices_count }}</span>
-            <span class="badge bg-info text-dark">13:30 — تم إدخال {{ turnout_overall.reported_1400 }} / {{ turnout_overall.offices_count }}</span>
-            <span class="badge bg-warning text-dark">15:30 — تم إدخال {{ turnout_overall.reported_1700 }} / {{ turnout_overall.offices_count }}</span>
+            <span class="badge bg-warning text-dark">15:20 — تم إدخال {{ turnout_overall.reported_1700 }} / {{ turnout_overall.offices_count }}</span>
             <span class="badge bg-success">اختتام — تم إدخال {{ turnout_overall.reported_1900 }} / {{ turnout_overall.offices_count }}</span>
         </div>
     </div>
 </div>
 
 <div class="row g-2 g-md-3 mb-4">
-    <div class="col-6 col-md-2">
+    <div class="col-12 col-md-3">
         <div class="card stat-card gold-accent p-3 text-center">
             <span class="text-muted small fw-bold">المسجلون ({{ turnout_overall.municipal_total_registered }})</span>
             <h4 class="fw-bold mb-0 mt-1 text-dark">{{ turnout_overall.municipal_total_registered }}</h4>
-            <small class="text-muted">محجوز: {{ turnout_overall.registered_voters }}</small>
+            <small class="text-muted">محجوز بالمكاتب: {{ turnout_overall.registered_voters }}</small>
         </div>
     </div>
-    <div class="col-6 col-md-2">
-        <div class="card stat-card p-3 text-center">
-            <span class="text-muted small fw-bold">11:00</span>
-            <h4 class="fw-bold mb-0 mt-1 text-primary">{{ turnout_overall.voters_0930 }}</h4>
-            <small class="fw-bold text-primary">{% if turnout_overall.pct_0930 is not none %}{{ turnout_overall.pct_0930 }}%{% else %}-{% endif %}</small>
-        </div>
-    </div>
-    <div class="col-6 col-md-2">
-        <div class="card stat-card p-3 text-center" style="border-top-color:#0284c7;">
-            <span class="text-muted small fw-bold">13:30</span>
-            <h4 class="fw-bold mb-0 mt-1 text-info">{{ turnout_overall.voters_1400 }}</h4>
-            <small class="fw-bold text-info">{% if turnout_overall.pct_1400 is not none %}{{ turnout_overall.pct_1400 }}%{% else %}-{% endif %}</small>
-        </div>
-    </div>
-    <div class="col-6 col-md-2">
+    <div class="col-6 col-md-3">
         <div class="card stat-card gold-accent p-3 text-center">
-            <span class="text-muted small fw-bold">15:30</span>
-            <h4 class="fw-bold mb-0 mt-1 text-warning">{{ turnout_overall.voters_1700 }}</h4>
-            <small class="fw-bold text-warning">{% if turnout_overall.pct_1700 is not none %}{{ turnout_overall.pct_1700 }}%{% else %}-{% endif %}</small>
+            <span class="text-muted small fw-bold">فترة 15:20 (بلدي / ولائي)</span>
+            <div class="d-flex justify-content-center gap-3 mt-1">
+                <div>
+                    <small class="text-primary fw-bold d-block">بلدي</small>
+                    <h5 class="fw-bold mb-0 text-primary">{{ turnout_overall.voters_1700 }}</h5>
+                    <small class="fw-bold text-primary">{% if turnout_overall.pct_1700 is not none %}{{ turnout_overall.pct_1700 }}%{% else %}-{% endif %}</small>
+                </div>
+                <div class="border-start ps-3">
+                    <small class="text-secondary fw-bold d-block">ولائي</small>
+                    <h5 class="fw-bold mb-0 text-secondary">{{ turnout_overall.voters_1700_wilai }}</h5>
+                    <small class="fw-bold text-secondary">{% if turnout_overall.pct_1700_wilai is not none %}{{ turnout_overall.pct_1700_wilai }}%{% else %}-{% endif %}</small>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card stat-card p-3 text-center" style="border-top-color:#15803d;">
-            <span class="text-muted small fw-bold">اختتام (النهائية)</span>
-            <h4 class="fw-bold mb-0 mt-1 text-success">{{ turnout_overall.voters_1900 }}</h4>
-            <small class="fw-bold text-success">{% if turnout_overall.pct_1900 is not none %}نسبة المشاركة: {{ turnout_overall.pct_1900 }}%{% else %}أدخل العدد المسجل لحساب النسبة{% endif %}</small>
+            <span class="text-muted small fw-bold">فترة اختتام (بلدي / ولائي)</span>
+            <div class="d-flex justify-content-center gap-3 mt-1">
+                <div>
+                    <small class="text-success fw-bold d-block">بلدي</small>
+                    <h5 class="fw-bold mb-0 text-success">{{ turnout_overall.voters_1900 }}</h5>
+                    <small class="fw-bold text-success">{% if turnout_overall.pct_1900 is not none %}{{ turnout_overall.pct_1900 }}%{% else %}-{% endif %}</small>
+                </div>
+                <div class="border-start ps-3">
+                    <small class="text-dark fw-bold d-block">ولائي</small>
+                    <h5 class="fw-bold mb-0 text-dark">{{ turnout_overall.voters_1900_wilai }}</h5>
+                    <small class="fw-bold text-dark">{% if turnout_overall.pct_1900_wilai is not none %}{{ turnout_overall.pct_1900_wilai }}%{% else %}-{% endif %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-3">
+        <div class="card stat-card p-3 text-center" style="border-top-color:#0f2c44;">
+            <span class="text-muted small fw-bold">المجموع النهائي (نسبتان)</span>
+            <div class="d-flex justify-content-center gap-3 mt-1">
+                <div>
+                    <small class="text-primary fw-bold d-block">نسبة البلدي</small>
+                    <h4 class="fw-bold mb-0 text-primary">{{ turnout_overall.final_pct_baladi }}%</h4>
+                </div>
+                <div class="border-start ps-3">
+                    <small class="text-secondary fw-bold d-block">نسبة الولائي</small>
+                    <h4 class="fw-bold mb-0 text-secondary">{{ turnout_overall.final_pct_wilai }}%</h4>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="card p-3 mb-4">
-    <h5 class="fw-bold mb-3" style="color:#0f2c44;">ملخص نسب المشاركة حسب مراكز التصويت</h5>
+    <h5 class="fw-bold mb-3" style="color:#0f2c44;">ملخص نسب المشاركة حسب مراكز التصويت (بلدي / ولائي)</h5>
     <div class="table-responsive">
         <table class="table table-bordered text-center align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="text-end">المركز</th>
-                    <th>العدد المسجل (المحجوز)</th>
-                    <th>11:00 (عدد / نسبة)</th>
-                    <th>13:30 (عدد / نسبة)</th>
-                    <th>15:30 (عدد / نسبة)</th>
-                    <th>اختتام (عدد / نسبة)</th>
+                    <th class="text-end" rowspan="2">المركز</th>
+                    <th rowspan="2">العدد المسجل (المحجوز)</th>
+                    <th colspan="2">15:20 (عدد / نسبة)</th>
+                    <th colspan="2">اختتام (عدد / نسبة)</th>
+                    <th colspan="2">النسبة النهائية بالمركز</th>
+                </tr>
+                <tr>
+                    <th>بلدي</th>
+                    <th>ولائي</th>
+                    <th>بلدي</th>
+                    <th>ولائي</th>
+                    <th class="text-primary">بلدي</th>
+                    <th class="text-secondary">ولائي</th>
                 </tr>
             </thead>
             <tbody>
@@ -1264,10 +1299,12 @@ setInterval(function() {
                 <tr>
                     <td class="fw-bold text-end">{{ cs.center_name }}</td>
                     <td class="fw-bold">{{ cs.registered_voters }}</td>
-                    <td>{{ cs.voters_0930 }} {% if cs.pct_0930 is not none %}<span class="badge bg-primary">{{ cs.pct_0930 }}%</span>{% endif %}</td>
-                    <td>{{ cs.voters_1400 }} {% if cs.pct_1400 is not none %}<span class="badge bg-info text-dark">{{ cs.pct_1400 }}%</span>{% endif %}</td>
-                    <td>{{ cs.voters_1700 }} {% if cs.pct_1700 is not none %}<span class="badge bg-warning text-dark">{{ cs.pct_1700 }}%</span>{% endif %}</td>
+                    <td>{{ cs.voters_1700 }} {% if cs.pct_1700 is not none %}<span class="badge bg-primary">{{ cs.pct_1700 }}%</span>{% endif %}</td>
+                    <td>{{ cs.voters_1700_wilai }} {% if cs.pct_1700_wilai is not none %}<span class="badge bg-secondary">{{ cs.pct_1700_wilai }}%</span>{% endif %}</td>
                     <td>{{ cs.voters_1900 }} {% if cs.pct_1900 is not none %}<span class="badge bg-success">{{ cs.pct_1900 }}%</span>{% endif %}</td>
+                    <td>{{ cs.voters_1900_wilai }} {% if cs.pct_1900_wilai is not none %}<span class="badge bg-dark">{{ cs.pct_1900_wilai }}%</span>{% endif %}</td>
+                    <td class="fw-bold text-primary">{{ cs.final_pct_baladi }}%</td>
+                    <td class="fw-bold text-secondary">{{ cs.final_pct_wilai }}%</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -1278,7 +1315,7 @@ setInterval(function() {
 <div class="card p-3">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <div>
-            <h5 class="fw-bold mb-1" style="color:#0f2c44;">تفاصيل المصوتين والنسب حسب كل مكتب</h5>
+            <h5 class="fw-bold mb-1" style="color:#0f2c44;">تفاصيل المصوتين والنسب حسب كل مكتب (15:20 و اختتام — بلدي / ولائي)</h5>
             <div class="d-flex align-items-center gap-3 small flex-wrap">
                 <span><span class="badge" style="background-color:#15803d;">&nbsp;&nbsp;</span> خانة خضراء: تم ملؤها</span>
                 <span><span class="badge bg-light text-dark border">&nbsp;&nbsp;</span> خانة بيضاء: لم تُملأ بعد</span>
@@ -1299,19 +1336,26 @@ setInterval(function() {
         <table class="table table-hover table-bordered text-center align-middle">
             <thead class="table-dark">
                 <tr>
-                    <th class="text-end">المركز</th>
-                    <th class="text-end">المكتب</th>
-                    <th>العدد المسجل<br><small>(الرقم المحجوز)</small></th>
-                    <th>11:00</th>
-                    <th>13:30</th>
-                    <th>15:30</th>
-                    <th>اختتام</th>
-                    <th>آخر تحديث</th>
+                    <th class="text-end" rowspan="2">المركز</th>
+                    <th class="text-end" rowspan="2">المكتب</th>
+                    <th rowspan="2">العدد المسجل<br><small>(الرقم المحجوز)</small></th>
+                    <th colspan="2">15:20</th>
+                    <th colspan="2">اختتام</th>
+                    <th colspan="2">المجموع (النسبتان)</th>
+                    <th rowspan="2">آخر تحديث</th>
+                </tr>
+                <tr>
+                    <th>بلدي</th>
+                    <th>ولائي</th>
+                    <th>بلدي</th>
+                    <th>ولائي</th>
+                    <th>بلدي</th>
+                    <th>ولائي</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in turnout_offices %}
-                {% set all_periods_filled = item.filled_0930 and item.filled_1400 and item.filled_1700 and item.filled_1900 %}
+                {% set all_periods_filled = item.filled_1700 and item.filled_1900 %}
                 <tr>
                     <td class="text-end fw-bold {% if all_periods_filled %}cell-filled-green{% endif %}">{{ item.center_name }}</td>
                     <td class="text-end fw-bold {% if all_periods_filled %}cell-filled-green{% endif %}">
@@ -1324,29 +1368,31 @@ setInterval(function() {
                         <form id="adminTurnoutForm{{ item.id }}" method="POST" action="{{ url_for('admin_update_turnout', turnout_id=item.id) }}" class="d-flex justify-content-center gap-1">
                             <input type="hidden" name="current_center_filter" value="{{ center_filter }}">
                             <input type="number" min="0" name="registered_voters" value="{{ item.registered_voters }}"
-                                   class="form-control form-control-sm text-center" style="min-width:74px;width:85px;">
+                                   class="form-control form-control-sm text-center" style="min-width:70px;width:80px;">
                         </form>
-                    </td>
-                    <td class="{% if item.filled_0930 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
-                        <input type="number" min="0" name="voters_0930" value="{{ item.voters_0930 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_0930 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
-                        {% if item.pct_0930 is not none %}<span class="badge bg-primary">{{ item.pct_0930 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
-                    </td>
-                    <td class="{% if item.filled_1400 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
-                        <input type="number" min="0" name="voters_1400" value="{{ item.voters_1400 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1400 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
-                        {% if item.pct_1400 is not none %}<span class="badge bg-info text-dark">{{ item.pct_1400 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="{% if item.filled_1700 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1700" value="{{ item.voters_1700 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1700 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
-                        {% if item.pct_1700 is not none %}<span class="badge bg-warning text-dark">{{ item.pct_1700 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1700 %}input-filled-green{% endif %}" style="min-width:68px;width:78px;">
+                        {% if item.pct_1700 is not none %}<span class="badge bg-primary">{{ item.pct_1700 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
+                    </td>
+                    <td class="{% if item.filled_1700 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
+                        <input type="number" min="0" name="voters_1700_wilai" value="{{ item.voters_1700_wilai }}" form="adminTurnoutForm{{ item.id }}"
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1700 %}input-filled-green{% endif %}" style="min-width:68px;width:78px;">
+                        {% if item.pct_1700_wilai is not none %}<span class="badge bg-secondary">{{ item.pct_1700_wilai }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
                     <td class="{% if item.filled_1900 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
                         <input type="number" min="0" name="voters_1900" value="{{ item.voters_1900 }}" form="adminTurnoutForm{{ item.id }}"
-                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1900 %}input-filled-green{% endif %}" style="min-width:74px;width:85px;">
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1900 %}input-filled-green{% endif %}" style="min-width:68px;width:78px;">
                         {% if item.pct_1900 is not none %}<span class="badge bg-success">{{ item.pct_1900 }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
                     </td>
+                    <td class="{% if item.filled_1900 %}cell-filled-green{% else %}cell-unfilled{% endif %}">
+                        <input type="number" min="0" name="voters_1900_wilai" value="{{ item.voters_1900_wilai }}" form="adminTurnoutForm{{ item.id }}"
+                               class="form-control form-control-sm text-center mx-auto mb-1 {% if item.filled_1900 %}input-filled-green{% endif %}" style="min-width:68px;width:78px;">
+                        {% if item.pct_1900_wilai is not none %}<span class="badge bg-dark">{{ item.pct_1900_wilai }}%</span>{% else %}<small class="text-muted">-</small>{% endif %}
+                    </td>
+                    <td class="fw-bold text-primary">{{ item.final_pct_baladi }}%</td>
+                    <td class="fw-bold text-secondary">{{ item.final_pct_wilai }}%</td>
                     <td class="small">
                         <div class="text-muted mb-1">{{ item.updated_at or '-' }}</div>
                         <button type="submit" form="adminTurnoutForm{{ item.id }}" class="btn btn-sm btn-dark fw-bold">حفظ</button>
@@ -1509,10 +1555,8 @@ function saveAllAdminTurnoutRows() {
 app.jinja_loader = DictLoader(TEMPLATES)
 
 TURNOUT_SLOTS = [
-    ("slot_0930", "الفترة الأولى (11:00)"),
-    ("slot_1400", "الفترة الثانية (13:30)"),
-    ("slot_1700", "الفترة الثالثة (15:30)"),
-    ("slot_1900", "الفترة الأخيرة (اختتام)"),
+    ("slot_1700", "الفترة الأولى (15:20)"),
+    ("slot_1900", "الفترة الثانية (اختتام)"),
 ]
 
 MUNICIPAL_TOTAL_REGISTERED = 8581
@@ -1560,7 +1604,6 @@ def _format_android_model_name(raw_model):
     low = cleaned.lower()
     if low in ("k", "phone", "mobile", "android", "android os"):
         return ""
-    # Clean common OEM prefixes/codes while preserving readable model names
     cleaned = re.sub(r"^samsung[\s_-]+", "Samsung ", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"^sm-", "Galaxy ", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
@@ -1581,7 +1624,6 @@ def detect_device_label(req):
                 model = candidate
 
     if not model:
-        # Fallback patterns for Redmi / Xiaomi / POCO / Huawei / Honor / Oppo / Realme / Tecno / Infinix / Samsung
         m_brand = re.search(
             r"\b((?:SM-[A-Z0-9]+|Redmi[^;)/]+|POCO[^;)/]+|Mi\s*[^;)/]+|M2[0-9]{2}[A-Z0-9]+|CPH[0-9]{4}|RMX[0-9]{4}|V2[0-9]{3}|IN[0-9]{4}|TECNO[^;)/]+|Infinix[^;)/]+|HONOR[^;)/]+|HUAWEI[^;)/]+))",
             ua,
@@ -1654,6 +1696,8 @@ def ensure_turnout_schema(conn):
             voters_1400 INTEGER NOT NULL DEFAULT 0,
             voters_1700 INTEGER NOT NULL DEFAULT 0,
             voters_1900 INTEGER NOT NULL DEFAULT 0,
+            voters_1700_wilai INTEGER NOT NULL DEFAULT 0,
+            voters_1900_wilai INTEGER NOT NULL DEFAULT 0,
             filled_0930 INTEGER NOT NULL DEFAULT 0,
             filled_1400 INTEGER NOT NULL DEFAULT 0,
             filled_1700 INTEGER NOT NULL DEFAULT 0,
@@ -1680,7 +1724,10 @@ def ensure_turnout_schema(conn):
         ORDER BY center_id, id
     """).fetchall()
     t_cols = [c["name"] for c in conn.execute("PRAGMA table_info(office_turnout)").fetchall()]
-    for col_name in ("filled_0930", "filled_1400", "filled_1700", "filled_1900"):
+    for col_name in (
+        "filled_0930", "filled_1400", "filled_1700", "filled_1900",
+        "voters_1700_wilai", "voters_1900_wilai"
+    ):
         if col_name not in t_cols:
             conn.execute(f"ALTER TABLE office_turnout ADD COLUMN {col_name} INTEGER NOT NULL DEFAULT 0")
     for off in offices:
@@ -1750,7 +1797,6 @@ def _ensure_staff_tracking_columns(conn):
         conn.execute("ALTER TABLE election_staff ADD COLUMN updated_at TEXT DEFAULT ''")
 
 
-
 def save_state_snapshot(conn=None):
     import json
     close_after = False
@@ -1762,7 +1808,7 @@ def save_state_snapshot(conn=None):
         turnout_rows = []
         t_exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='office_turnout'").fetchone()
         if t_exists:
-            for r in conn.execute("SELECT center_id, center_name, office_name, registered_voters, voters_0930, voters_1400, voters_1700, voters_1900, filled_0930, filled_1400, filled_1700, filled_1900, updated_at FROM office_turnout ORDER BY id").fetchall():
+            for r in conn.execute("SELECT center_id, center_name, office_name, registered_voters, voters_1700, voters_1900, voters_1700_wilai, voters_1900_wilai, filled_1700, filled_1900, updated_at FROM office_turnout ORDER BY id").fetchall():
                 turnout_rows.append(dict(r))
 
         staff_updates = []
@@ -1812,32 +1858,34 @@ def restore_state_snapshot_if_needed(conn):
         if not c_name or not o_name:
             continue
         cur_row = conn.execute(
-            "SELECT registered_voters, voters_0930, voters_1400, voters_1700, voters_1900 FROM office_turnout WHERE center_name = ? AND office_name = ?",
+            "SELECT registered_voters, voters_1700, voters_1900, voters_1700_wilai, voters_1900_wilai FROM office_turnout WHERE center_name = ? AND office_name = ?",
             (c_name, o_name),
         ).fetchone()
         if cur_row:
             b_reg = int(tr.get("registered_voters") or 0)
-            b_0930 = int(tr.get("voters_0930") or 0)
-            b_1400 = int(tr.get("voters_1400") or 0)
             b_1700 = int(tr.get("voters_1700") or 0)
             b_1900 = int(tr.get("voters_1900") or 0)
+            b_1700_w = int(tr.get("voters_1700_wilai") or 0)
+            b_1900_w = int(tr.get("voters_1900_wilai") or 0)
             new_reg = cur_row["registered_voters"] or b_reg
-            new_0930 = cur_row["voters_0930"] or b_0930
-            new_1400 = cur_row["voters_1400"] or b_1400
             new_1700 = cur_row["voters_1700"] or b_1700
             new_1900 = cur_row["voters_1900"] or b_1900
-            if (new_reg, new_0930, new_1400, new_1700, new_1900) != (
-                cur_row["registered_voters"], cur_row["voters_0930"], cur_row["voters_1400"], cur_row["voters_1700"], cur_row["voters_1900"]
+            new_1700_w = cur_row["voters_1700_wilai"] or b_1700_w
+            new_1900_w = cur_row["voters_1900_wilai"] or b_1900_w
+            if (new_reg, new_1700, new_1900, new_1700_w, new_1900_w) != (
+                cur_row["registered_voters"], cur_row["voters_1700"], cur_row["voters_1900"], cur_row["voters_1700_wilai"], cur_row["voters_1900_wilai"]
             ):
                 conn.execute("""
                     UPDATE office_turnout
-                    SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
-                        filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?,
+                    SET registered_voters = ?, voters_1700 = ?, voters_1900 = ?,
+                        voters_1700_wilai = ?, voters_1900_wilai = ?,
+                        filled_1700 = ?, filled_1900 = ?,
                         updated_at = COALESCE(NULLIF(updated_at, ''), ?)
                     WHERE center_name = ? AND office_name = ?
                 """, (
-                    new_reg, new_0930, new_1400, new_1700, new_1900,
-                    1 if new_0930 > 0 else 0, 1 if new_1400 > 0 else 0, 1 if new_1700 > 0 else 0, 1 if new_1900 > 0 else 0,
+                    new_reg, new_1700, new_1900, new_1700_w, new_1900_w,
+                    1 if (new_1700 > 0 or new_1700_w > 0) else 0,
+                    1 if (new_1900 > 0 or new_1900_w > 0) else 0,
                     tr.get("updated_at") or "", c_name, o_name,
                 ))
 
@@ -1891,7 +1939,6 @@ def init_database():
             _ensure_staff_tracking_columns(conn)
             conn.commit()
         ensure_turnout_schema(conn)
-        # Auto-sync the 4 official PDF staff members for ابتدائية حساني قدور if missing in an existing DB
         missing_official_staff = [
             (1, 'ابتدائية حساني قدور', 2, 'المجالس الشعبية البلدية', 'المكتب 1', 'عطاء الله', 'محمد', 'ATALLAH', 'MOHAMMED', '1993-06-19', 'الخيثر', 'الخيثر', 'مساعد مكتب أول بلدي'),
             (1, 'ابتدائية حساني قدور', 7, 'المجالس الشعبية الولائية', 'المكتب 3', 'عطاء الله', 'خليفة', 'ATALLAH', 'KHALIFA', '1996-05-25', 'بوقطب', 'الخيثر', 'كاتب ولائي'),
@@ -2124,8 +2171,8 @@ def center_dashboard():
 
     turnout_rows = conn.execute("""
         SELECT id, center_id, center_name, office_name, registered_voters,
-               voters_0930, voters_1400, voters_1700, voters_1900,
-               filled_0930, filled_1400, filled_1700, filled_1900, updated_at
+               voters_1700, voters_1900, voters_1700_wilai, voters_1900_wilai,
+               filled_1700, filled_1900, updated_at
         FROM office_turnout
         WHERE center_id = ?
         ORDER BY id
@@ -2133,43 +2180,51 @@ def center_dashboard():
     conn.close()
 
     turnout_list = []
-    sum_reg = sum_0930 = sum_1400 = sum_1700 = sum_1900 = 0
+    sum_reg = sum_1700 = sum_1900 = sum_1700_w = sum_1900_w = 0
     for r in turnout_rows:
         reg = r["registered_voters"] or 0
-        v0930 = r["voters_0930"] or 0
-        v1400 = r["voters_1400"] or 0
         v1700 = r["voters_1700"] or 0
         v1900 = r["voters_1900"] or 0
-        f0930 = 1 if (r["filled_0930"] or v0930 > 0) else 0
-        f1400 = 1 if (r["filled_1400"] or v1400 > 0) else 0
-        f1700 = 1 if (r["filled_1700"] or v1700 > 0) else 0
-        f1900 = 1 if (r["filled_1900"] or v1900 > 0) else 0
+        v1700_w = r["voters_1700_wilai"] or 0
+        v1900_w = r["voters_1900_wilai"] or 0
+        f1700 = 1 if (r["filled_1700"] or v1700 > 0 or v1700_w > 0) else 0
+        f1900 = 1 if (r["filled_1900"] or v1900 > 0 or v1900_w > 0) else 0
         sum_reg += reg
-        sum_0930 += v0930
-        sum_1400 += v1400
         sum_1700 += v1700
         sum_1900 += v1900
+        sum_1700_w += v1700_w
+        sum_1900_w += v1900_w
+
+        latest_b = v1900 if f1900 else (v1700 if f1700 else 0)
+        latest_w = v1900_w if f1900 else (v1700_w if f1700 else 0)
+        pct_b = round((latest_b / reg) * 100, 2) if reg > 0 else 0.0
+        pct_w = round((latest_w / reg) * 100, 2) if reg > 0 else 0.0
+
         turnout_list.append({
             "id": r["id"],
             "office_name": r["office_name"],
             "registered_voters": reg,
-            "voters_0930": v0930,
-            "voters_1400": v1400,
             "voters_1700": v1700,
             "voters_1900": v1900,
-            "filled_0930": f0930,
-            "filled_1400": f1400,
+            "voters_1700_wilai": v1700_w,
+            "voters_1900_wilai": v1900_w,
             "filled_1700": f1700,
             "filled_1900": f1900,
+            "latest_pct_baladi": f"{pct_b:.2f}",
+            "latest_pct_wilai": f"{pct_w:.2f}",
             "updated_at": r["updated_at"],
         })
 
+    final_center_b = sum_1900 if sum_1900 > 0 else sum_1700
+    final_center_w = sum_1900_w if sum_1900_w > 0 else sum_1700_w
     center_turnout_totals = {
         "registered_voters": sum_reg,
-        "voters_0930": sum_0930,
-        "voters_1400": sum_1400,
         "voters_1700": sum_1700,
         "voters_1900": sum_1900,
+        "voters_1700_wilai": sum_1700_w,
+        "voters_1900_wilai": sum_1900_w,
+        "pct_baladi": f"{round((final_center_b / sum_reg) * 100, 2) if sum_reg > 0 else 0.0:.2f}",
+        "pct_wilai": f"{round((final_center_w / sum_reg) * 100, 2) if sum_reg > 0 else 0.0:.2f}",
     }
 
     return render_template_string(
@@ -2190,15 +2245,13 @@ def center_dashboard():
 
 def _validate_and_save_office_turnout(conn, row, form_dict, prefix="", fixed_now=None):
     reg_limit = row["registered_voters"] or 0
-    v0930 = row["voters_0930"] or 0
-    v1400 = row["voters_1400"] or 0
-    v1700 = row["voters_1700"] or 0
-    v1900 = row["voters_1900"] or 0
+    v1700_b = row["voters_1700"] or 0
+    v1900_b = row["voters_1900"] or 0
+    v1700_w = row["voters_1700_wilai"] or 0
+    v1900_w = row["voters_1900_wilai"] or 0
 
-    f0930 = 1 if (row["filled_0930"] or v0930 > 0) else 0
-    f1400 = 1 if (row["filled_1400"] or v1400 > 0) else 0
-    f1700 = 1 if (row["filled_1700"] or v1700 > 0) else 0
-    f1900 = 1 if (row["filled_1900"] or v1900 > 0) else 0
+    f1700 = 1 if (row["filled_1700"] or v1700_b > 0 or v1700_w > 0) else 0
+    f1900 = 1 if (row["filled_1900"] or v1900_b > 0 or v1900_w > 0) else 0
 
     def read_int(key):
         raw = (form_dict.get(key, "") or "").strip()
@@ -2210,62 +2263,47 @@ def _validate_and_save_office_turnout(conn, row, form_dict, prefix="", fixed_now
         return val
 
     try:
-        in_0930 = read_int(f"{prefix}voters_0930")
-        in_1400 = read_int(f"{prefix}voters_1400")
-        in_1700 = read_int(f"{prefix}voters_1700")
-        in_1900 = read_int(f"{prefix}voters_1900")
+        in_1700_b = read_int(f"{prefix}voters_1700")
+        in_1700_w = read_int(f"{prefix}voters_1700_wilai")
+        in_1900_b = read_int(f"{prefix}voters_1900")
+        in_1900_w = read_int(f"{prefix}voters_1900_wilai")
     except ValueError:
         return False, f"خطأ في المكتب ({row['office_name']}): يرجى إدخال أعداد صحيحة موجبة فقط."
 
-    if in_0930 is not None:
-        v0930 = in_0930
-        f0930 = 1
-
-    if in_1400 is not None:
-        if not f0930:
-            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (13:30) قبل إرسال فترة (11:00)."
-        v1400 = in_1400
-        f1400 = 1
-
-    if in_1700 is not None:
-        if not f1400:
-            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (15:30) قبل إرسال فترة (13:30)."
-        v1700 = in_1700
+    if in_1700_b is not None or in_1700_w is not None:
+        if in_1700_b is not None:
+            v1700_b = in_1700_b
+        if in_1700_w is not None:
+            v1700_w = in_1700_w
         f1700 = 1
 
-    if in_1900 is not None:
+    if in_1900_b is not None or in_1900_w is not None:
         if not f1700:
-            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (اختتام) قبل إرسال فترة (15:30)."
-        v1900 = in_1900
+            return False, f"خطأ في المكتب ({row['office_name']}): لا يمكن إدخال فترة (اختتام) قبل إرسال فترة (15:20)."
+        if in_1900_b is not None:
+            v1900_b = in_1900_b
+        if in_1900_w is not None:
+            v1900_w = in_1900_w
         f1900 = 1
 
-    if reg_limit > 0 and max(v0930, v1400, v1700, v1900) > reg_limit:
+    if reg_limit > 0 and max(v1700_b, v1900_b, v1700_w, v1900_w) > reg_limit:
         return False, f"خطأ في المكتب ({row['office_name']}): عدد المصوتين المدخل يتجاوز عدد المسجلين بالمكتب ({reg_limit})."
 
-    submitted = []
-    if f0930:
-        submitted.append(("11:00", v0930))
-    if f1400:
-        submitted.append(("13:30", v1400))
-    if f1700:
-        submitted.append(("15:30", v1700))
-    if f1900:
-        submitted.append(("اختتام", v1900))
+    if f1900 and v1900_b < v1700_b:
+        return False, f"خطأ في المكتب ({row['office_name']}) [البلدي]: عدد المصوتين عند الاختتام ({v1900_b}) أقل من فترة 15:20 ({v1700_b})."
 
-    for i in range(1, len(submitted)):
-        prev_lbl, prev_v = submitted[i - 1]
-        curr_lbl, curr_v = submitted[i]
-        if curr_v < prev_v:
-            return False, f"خطأ في المكتب ({row['office_name']}): عدد المصوتين في ({curr_lbl}) ({curr_v}) أقل من الفترة السابقة ({prev_lbl}) ({prev_v})."
+    if f1900 and v1900_w < v1700_w:
+        return False, f"خطأ في المكتب ({row['office_name']}) [الولائي]: عدد المصوتين عند الاختتام ({v1900_w}) أقل من فترة 15:20 ({v1700_w})."
 
     now_str = fixed_now or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute("""
         UPDATE office_turnout
-        SET voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
-            filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?,
+        SET voters_1700 = ?, voters_1900 = ?,
+            voters_1700_wilai = ?, voters_1900_wilai = ?,
+            filled_1700 = ?, filled_1900 = ?,
             updated_at = ?
         WHERE id = ?
-    """, (v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, row["id"]))
+    """, (v1700_b, v1900_b, v1700_w, v1900_w, f1700, f1900, now_str, row["id"]))
     return True, now_str
 
 
@@ -2432,28 +2470,29 @@ def admin_dashboard():
 
     turnout_offices = []
     total_reg = 0
-    total_0930 = total_1400 = total_1700 = total_1900 = 0
-    reported_0930 = reported_1400 = reported_1700 = reported_1900 = 0
+    total_1700 = total_1900 = total_1700_w = total_1900_w = 0
+    reported_1700 = reported_1900 = 0
 
     for r in raw_turnout:
         reg = r["registered_voters"] or 0
-        v0930 = r["voters_0930"] or 0
-        v1400 = r["voters_1400"] or 0
         v1700 = r["voters_1700"] or 0
         v1900 = r["voters_1900"] or 0
+        v1700_w = r["voters_1700_wilai"] or 0
+        v1900_w = r["voters_1900_wilai"] or 0
         total_reg += reg
-        total_0930 += v0930
-        total_1400 += v1400
         total_1700 += v1700
         total_1900 += v1900
-        if v0930 > 0:
-            reported_0930 += 1
-        if v1400 > 0:
-            reported_1400 += 1
-        if v1700 > 0:
+        total_1700_w += v1700_w
+        total_1900_w += v1900_w
+        if v1700 > 0 or v1700_w > 0:
             reported_1700 += 1
-        if v1900 > 0:
+        if v1900 > 0 or v1900_w > 0:
             reported_1900 += 1
+
+        f1700 = (r["filled_1700"] if "filled_1700" in r.keys() else 0) or (1 if (v1700 > 0 or v1700_w > 0) else 0)
+        f1900 = (r["filled_1900"] if "filled_1900" in r.keys() else 0) or (1 if (v1900 > 0 or v1900_w > 0) else 0)
+        latest_b = v1900 if f1900 else (v1700 if f1700 else 0)
+        latest_w = v1900_w if f1900 else (v1700_w if f1700 else 0)
 
         turnout_offices.append({
             "id": r["id"],
@@ -2461,18 +2500,18 @@ def admin_dashboard():
             "center_name": r["center_name"],
             "office_name": r["office_name"],
             "registered_voters": reg,
-            "voters_0930": v0930,
-            "filled_0930": (r["filled_0930"] if "filled_0930" in r.keys() else 0) or (1 if v0930 > 0 else 0),
-            "pct_0930": calc_pct(v0930, reg),
-            "voters_1400": v1400,
-            "filled_1400": (r["filled_1400"] if "filled_1400" in r.keys() else 0) or (1 if v1400 > 0 else 0),
-            "pct_1400": calc_pct(v1400, reg),
             "voters_1700": v1700,
-            "filled_1700": (r["filled_1700"] if "filled_1700" in r.keys() else 0) or (1 if v1700 > 0 else 0),
+            "voters_1700_wilai": v1700_w,
+            "filled_1700": f1700,
             "pct_1700": calc_pct(v1700, reg),
+            "pct_1700_wilai": calc_pct(v1700_w, reg),
             "voters_1900": v1900,
-            "filled_1900": (r["filled_1900"] if "filled_1900" in r.keys() else 0) or (1 if v1900 > 0 else 0),
+            "voters_1900_wilai": v1900_w,
+            "filled_1900": f1900,
             "pct_1900": calc_pct(v1900, reg),
+            "pct_1900_wilai": calc_pct(v1900_w, reg),
+            "final_pct_baladi": f"{round((latest_b / reg) * 100, 2) if reg > 0 else 0.0:.2f}",
+            "final_pct_wilai": f"{round((latest_w / reg) * 100, 2) if reg > 0 else 0.0:.2f}",
             "updated_at": r["updated_at"],
         })
 
@@ -2480,40 +2519,46 @@ def admin_dashboard():
     for c in centers_list:
         c_rows = [x for x in all_turnout if x["center_id"] == c["center_id"]]
         c_reg = sum(x["registered_voters"] or 0 for x in c_rows)
-        c_0930 = sum(x["voters_0930"] or 0 for x in c_rows)
-        c_1400 = sum(x["voters_1400"] or 0 for x in c_rows)
         c_1700 = sum(x["voters_1700"] or 0 for x in c_rows)
         c_1900 = sum(x["voters_1900"] or 0 for x in c_rows)
+        c_1700_w = sum(x["voters_1700_wilai"] or 0 for x in c_rows)
+        c_1900_w = sum(x["voters_1900_wilai"] or 0 for x in c_rows)
+        c_final_b = c_1900 if c_1900 > 0 else c_1700
+        c_final_w = c_1900_w if c_1900_w > 0 else c_1700_w
         center_turnout_summary.append({
             "center_id": c["center_id"],
             "center_name": c["center_name"],
             "registered_voters": c_reg,
-            "voters_0930": c_0930,
-            "pct_0930": calc_pct(c_0930, c_reg),
-            "voters_1400": c_1400,
-            "pct_1400": calc_pct(c_1400, c_reg),
             "voters_1700": c_1700,
+            "voters_1700_wilai": c_1700_w,
             "pct_1700": calc_pct(c_1700, c_reg),
+            "pct_1700_wilai": calc_pct(c_1700_w, c_reg),
             "voters_1900": c_1900,
+            "voters_1900_wilai": c_1900_w,
             "pct_1900": calc_pct(c_1900, c_reg),
+            "pct_1900_wilai": calc_pct(c_1900_w, c_reg),
+            "final_pct_baladi": f"{round((c_final_b / c_reg) * 100, 2) if c_reg > 0 else 0.0:.2f}",
+            "final_pct_wilai": f"{round((c_final_w / c_reg) * 100, 2) if c_reg > 0 else 0.0:.2f}",
         })
 
+    overall_final_b = total_1900 if total_1900 > 0 else total_1700
+    overall_final_w = total_1900_w if total_1900_w > 0 else total_1700_w
     turnout_overall = {
         "offices_count": len(turnout_offices),
-        "reported_0930": reported_0930,
-        "reported_1400": reported_1400,
         "reported_1700": reported_1700,
         "reported_1900": reported_1900,
         "registered_voters": total_reg,
         "municipal_total_registered": MUNICIPAL_TOTAL_REGISTERED,
-        "voters_0930": total_0930,
-        "pct_0930": calc_municipal_turnout_pct(total_0930, MUNICIPAL_TOTAL_REGISTERED),
-        "voters_1400": total_1400,
-        "pct_1400": calc_municipal_turnout_pct(total_1400, MUNICIPAL_TOTAL_REGISTERED),
         "voters_1700": total_1700,
+        "voters_1700_wilai": total_1700_w,
         "pct_1700": calc_municipal_turnout_pct(total_1700, MUNICIPAL_TOTAL_REGISTERED),
+        "pct_1700_wilai": calc_municipal_turnout_pct(total_1700_w, MUNICIPAL_TOTAL_REGISTERED),
         "voters_1900": total_1900,
+        "voters_1900_wilai": total_1900_w,
         "pct_1900": calc_municipal_turnout_pct(total_1900, MUNICIPAL_TOTAL_REGISTERED),
+        "pct_1900_wilai": calc_municipal_turnout_pct(total_1900_w, MUNICIPAL_TOTAL_REGISTERED),
+        "final_pct_baladi": f"{calc_municipal_turnout_pct(overall_final_b, MUNICIPAL_TOTAL_REGISTERED) or 0.0:.2f}",
+        "final_pct_wilai": f"{calc_municipal_turnout_pct(overall_final_w, MUNICIPAL_TOTAL_REGISTERED) or 0.0:.2f}",
     }
 
     conn_pres = get_db()
@@ -2603,22 +2648,21 @@ def admin_update_turnout(turnout_id):
             return fallback
 
     reg_val = parse_non_neg_int("registered_voters", row["registered_voters"] or 0)
-    v0930 = parse_non_neg_int("voters_0930", row["voters_0930"] or 0)
-    v1400 = parse_non_neg_int("voters_1400", row["voters_1400"] or 0)
     v1700 = parse_non_neg_int("voters_1700", row["voters_1700"] or 0)
+    v1700_w = parse_non_neg_int("voters_1700_wilai", row["voters_1700_wilai"] or 0)
     v1900 = parse_non_neg_int("voters_1900", row["voters_1900"] or 0)
+    v1900_w = parse_non_neg_int("voters_1900_wilai", row["voters_1900_wilai"] or 0)
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    f0930 = 1 if v0930 > 0 else 0
-    f1400 = 1 if v1400 > 0 else 0
-    f1700 = 1 if v1700 > 0 else 0
-    f1900 = 1 if v1900 > 0 else 0
+    f1700 = 1 if (v1700 > 0 or v1700_w > 0) else 0
+    f1900 = 1 if (v1900 > 0 or v1900_w > 0) else 0
     conn.execute("""
         UPDATE office_turnout
-        SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
-            filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?, updated_at = ?
+        SET registered_voters = ?, voters_1700 = ?, voters_1900 = ?,
+            voters_1700_wilai = ?, voters_1900_wilai = ?,
+            filled_1700 = ?, filled_1900 = ?, updated_at = ?
         WHERE id = ?
-    """, (reg_val, v0930, v1400, v1700, v1900, f0930, f1400, f1700, f1900, now_str, turnout_id))
+    """, (reg_val, v1700, v1900, v1700_w, v1900_w, f1700, f1900, now_str, turnout_id))
     conn.commit()
     save_state_snapshot(conn)
     conn.close()
@@ -2659,6 +2703,8 @@ def reset_all_data():
                 voters_1400 = 0,
                 voters_1700 = 0,
                 voters_1900 = 0,
+                voters_1700_wilai = 0,
+                voters_1900_wilai = 0,
                 filled_0930 = 0,
                 filled_1400 = 0,
                 filled_1700 = 0,
@@ -2721,7 +2767,7 @@ def export_turnout_csv():
     ensure_turnout_schema(conn)
     rows = conn.execute("""
         SELECT center_name, office_name, registered_voters,
-               voters_0930, voters_1400, voters_1700, voters_1900, updated_at
+               voters_1700, voters_1700_wilai, voters_1900, voters_1900_wilai, updated_at
         FROM office_turnout
         ORDER BY center_id, id
     """).fetchall()
@@ -2737,24 +2783,24 @@ def export_turnout_csv():
     writer = csv.writer(output)
     writer.writerow([
         "المركز", "المكتب", "العدد المسجل (الرقم المحجوز)",
-        "المصوتون 11:00", "النسبة 11:00",
-        "المصوتون 13:30", "النسبة 13:30",
-        "المصوتون 15:30", "النسبة 15:30",
-        "المصوتون اختتام", "النسبة اختتام",
+        "المصوتون بلدي 15:20", "النسبة بلدي 15:20",
+        "المصوتون ولائي 15:20", "النسبة ولائي 15:20",
+        "المصوتون بلدي اختتام", "النسبة النهائية بلدي",
+        "المصوتون ولائي اختتام", "النسبة النهائية ولائي",
         "آخر تحديث"
     ])
     for r in rows:
         reg = r["registered_voters"] or 0
-        v0930 = r["voters_0930"] or 0
-        v1400 = r["voters_1400"] or 0
         v1700 = r["voters_1700"] or 0
+        v1700_w = r["voters_1700_wilai"] or 0
         v1900 = r["voters_1900"] or 0
+        v1900_w = r["voters_1900_wilai"] or 0
         writer.writerow([
             r["center_name"], r["office_name"], reg,
-            v0930, pct_str(v0930, reg),
-            v1400, pct_str(v1400, reg),
             v1700, pct_str(v1700, reg),
+            v1700_w, pct_str(v1700_w, reg),
             v1900, pct_str(v1900, reg),
+            v1900_w, pct_str(v1900_w, reg),
             r["updated_at"] or "-"
         ])
 
@@ -2830,21 +2876,23 @@ def import_csv_data():
                     continue
 
                 reg_val = to_int(row_clean.get("العدد المسجل (الرقم المحجوز)", row_clean.get("العدد المسجل", 0)))
-                v0930 = to_int(row_clean.get("المصوتون 11:00", row_clean.get("المصوتون 09:30", 0)))
-                v1400 = to_int(row_clean.get("المصوتون 13:30", row_clean.get("المصوتون 14:00", 0)))
-                v1700 = to_int(row_clean.get("المصوتون 15:30", row_clean.get("المصوتون 17:00", 0)))
-                v1900 = to_int(row_clean.get("المصوتون اختتام", row_clean.get("المصوتون 19:00", 0)))
+                v1700 = to_int(row_clean.get("المصوتون بلدي 15:20", row_clean.get("المصوتون 15:20", row_clean.get("المصوتون 15:30", 0))))
+                v1700_w = to_int(row_clean.get("المصوتون ولائي 15:20", 0))
+                v1900 = to_int(row_clean.get("المصوتون بلدي اختتام", row_clean.get("المصوتون اختتام", 0)))
+                v1900_w = to_int(row_clean.get("المصوتون ولائي اختتام", 0))
                 upd_at = row_clean.get("آخر تحديث", "") or now_str
                 if upd_at == "-":
                     upd_at = now_str
 
                 cur = conn.execute("""
                     UPDATE office_turnout
-                    SET registered_voters = ?, voters_0930 = ?, voters_1400 = ?, voters_1700 = ?, voters_1900 = ?,
-                        filled_0930 = ?, filled_1400 = ?, filled_1700 = ?, filled_1900 = ?, updated_at = ?
+                    SET registered_voters = ?, voters_1700 = ?, voters_1700_wilai = ?,
+                        voters_1900 = ?, voters_1900_wilai = ?,
+                        filled_1700 = ?, filled_1900 = ?, updated_at = ?
                     WHERE center_name = ? AND office_name = ?
-                """, (reg_val, v0930, v1400, v1700, v1900,
-                      1 if v0930 > 0 else 0, 1 if v1400 > 0 else 0, 1 if v1700 > 0 else 0, 1 if v1900 > 0 else 0,
+                """, (reg_val, v1700, v1700_w, v1900, v1900_w,
+                      1 if (v1700 > 0 or v1700_w > 0) else 0,
+                      1 if (v1900 > 0 or v1900_w > 0) else 0,
                       upd_at, center_name, office_name))
                 if cur.rowcount > 0:
                     updated_count += cur.rowcount
@@ -3332,57 +3380,57 @@ def admin_print_turnout_pdf():
             return None
         return round((voters / reg) * 100, 2)
 
-    tot_reg = tot_0930 = tot_1400 = tot_1700 = tot_1900 = 0
+    tot_reg = tot_1700 = tot_1700_w = tot_1900 = tot_1900_w = 0
     rows = []
     for r in raw_turnout:
         reg = r["registered_voters"] or 0
-        v0930 = r["voters_0930"] or 0
-        v1400 = r["voters_1400"] or 0
         v1700 = r["voters_1700"] or 0
+        v1700_w = r["voters_1700_wilai"] or 0
         v1900 = r["voters_1900"] or 0
+        v1900_w = r["voters_1900_wilai"] or 0
         tot_reg += reg
-        tot_0930 += v0930
-        tot_1400 += v1400
         tot_1700 += v1700
+        tot_1700_w += v1700_w
         tot_1900 += v1900
+        tot_1900_w += v1900_w
 
-        p0930 = calc_pct(v0930, reg)
-        p1400 = calc_pct(v1400, reg)
         p1700 = calc_pct(v1700, reg)
+        p1700_w = calc_pct(v1700_w, reg)
         p1900 = calc_pct(v1900, reg)
+        p1900_w = calc_pct(v1900_w, reg)
 
         rows.append([
             r["center_name"],
             r["office_name"],
             str(reg),
-            f"{v0930} ({p0930}%)" if p0930 is not None else str(v0930),
-            f"{v1400} ({p1400}%)" if p1400 is not None else str(v1400),
             f"{v1700} ({p1700}%)" if p1700 is not None else str(v1700),
+            f"{v1700_w} ({p1700_w}%)" if p1700_w is not None else str(v1700_w),
             f"{v1900} ({p1900}%)" if p1900 is not None else str(v1900),
+            f"{v1900_w} ({p1900_w}%)" if p1900_w is not None else str(v1900_w),
             r["updated_at"] or "-",
         ])
 
     if not rows:
         rows.append(["-", "-", "0", "0", "0", "0", "0", "-"])
 
-    m_pct_0930 = calc_municipal_turnout_pct(tot_0930, MUNICIPAL_TOTAL_REGISTERED)
-    m_pct_1400 = calc_municipal_turnout_pct(tot_1400, MUNICIPAL_TOTAL_REGISTERED)
     m_pct_1700 = calc_municipal_turnout_pct(tot_1700, MUNICIPAL_TOTAL_REGISTERED)
+    m_pct_1700_w = calc_municipal_turnout_pct(tot_1700_w, MUNICIPAL_TOTAL_REGISTERED)
     m_pct_1900 = calc_municipal_turnout_pct(tot_1900, MUNICIPAL_TOTAL_REGISTERED)
+    m_pct_1900_w = calc_municipal_turnout_pct(tot_1900_w, MUNICIPAL_TOTAL_REGISTERED)
 
     cards = [
         {"label": "هيئة الناخبين البلدية", "val": str(MUNICIPAL_TOTAL_REGISTERED), "sub": f"محجوز بالمكاتب: {tot_reg}"},
-        {"label": "المشاركة 11:00", "val": str(tot_0930), "sub": f"{m_pct_0930}%" if m_pct_0930 is not None else "-"},
-        {"label": "المشاركة 13:30", "val": str(tot_1400), "sub": f"{m_pct_1400}%" if m_pct_1400 is not None else "-"},
-        {"label": "المشاركة 15:30", "val": str(tot_1700), "sub": f"{m_pct_1700}%" if m_pct_1700 is not None else "-"},
-        {"label": "المشاركة اختتام", "val": str(tot_1900), "sub": f"{m_pct_1900}%" if m_pct_1900 is not None else "-"},
+        {"label": "15:20 — بلدي / ولائي", "val": f"{tot_1700} / {tot_1700_w}", "sub": f"{m_pct_1700}% | {m_pct_1700_w}%"},
+        {"label": "اختتام — بلدي / ولائي", "val": f"{tot_1900} / {tot_1900_w}", "sub": f"{m_pct_1900}% | {m_pct_1900_w}%"},
+        {"label": "النسبة النهائية للبلدي", "val": f"{m_pct_1900 if tot_1900 > 0 else m_pct_1700}%"},
+        {"label": "النسبة النهائية للولائي", "val": f"{m_pct_1900_w if tot_1900_w > 0 else m_pct_1700_w}%"},
     ]
 
-    headers = ["المركز", "المكتب", "المسجلون", "11:00", "13:30", "15:30", "اختتام", "آخر تحديث"]
+    headers = ["المركز", "المكتب", "المسجلون", "15:20 (بلدي)", "15:20 (ولائي)", "اختتام (بلدي)", "اختتام (ولائي)", "آخر تحديث"]
 
     return _render_admin_pdf_response(
         title="تقرير نسب المشاركة وأعداد المصوتين - بلدية الخيثر",
-        subtitle=f"يوم الاقتراع 28 نوفمبر 2026 ({center_label})",
+        subtitle=f"يوم الاقتراع 28 نوفمبر 2026 — فترتا 15:20 واختتام (بلدي / ولائي) ({center_label})",
         cards=cards,
         headers=headers,
         rows=rows,
